@@ -1,0 +1,68 @@
+-- Notice Decoder Database Schema
+-- Version: 001_initial_schema.sql
+-- Target: Neon Serverless PostgreSQL / Standard PostgreSQL 15+
+
+-- 1. Notices Table
+CREATE TABLE IF NOT EXISTS notices (
+    id VARCHAR(64) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    raw_text TEXT NOT NULL,
+    file_name VARCHAR(255),
+    file_type VARCHAR(32) NOT NULL DEFAULT 'text',
+    file_size INTEGER,
+    status VARCHAR(32) NOT NULL DEFAULT 'extracted',
+    error_message TEXT,
+    is_demo BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_notices_status ON notices(status);
+CREATE INDEX IF NOT EXISTS idx_notices_created_at ON notices(created_at DESC);
+
+-- 2. Events Table (Extracted and Confirmed events)
+CREATE TABLE IF NOT EXISTS events (
+    id VARCHAR(64) PRIMARY KEY,
+    notice_id VARCHAR(64) REFERENCES notices(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    category VARCHAR(32) NOT NULL,
+    kind VARCHAR(32) NOT NULL DEFAULT 'timed_event',
+    date DATE NOT NULL,
+    start_time VARCHAR(8),
+    end_time VARCHAR(8),
+    deadline_time VARCHAR(8),
+    venue VARCHAR(255),
+    department_or_audience VARCHAR(255),
+    source_text_evidence TEXT NOT NULL,
+    confidence NUMERIC(3, 2) NOT NULL DEFAULT 0.90,
+    review_required BOOLEAN NOT NULL DEFAULT FALSE,
+    review_reasons JSONB DEFAULT '[]'::jsonb,
+    is_confirmed BOOLEAN NOT NULL DEFAULT TRUE,
+    timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Kolkata',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_notice_id ON events(notice_id);
+CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
+CREATE INDEX IF NOT EXISTS idx_events_is_confirmed ON events(is_confirmed);
+CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
+
+-- 3. Conflicts Cache Table
+CREATE TABLE IF NOT EXISTS conflicts_cache (
+    id VARCHAR(64) PRIMARY KEY,
+    notice_id VARCHAR(64) REFERENCES notices(id) ON DELETE CASCADE,
+    conflict_type VARCHAR(64) NOT NULL,
+    severity VARCHAR(32) NOT NULL,
+    event_a_id VARCHAR(64) REFERENCES events(id) ON DELETE CASCADE,
+    event_b_id VARCHAR(64) REFERENCES events(id) ON DELETE CASCADE,
+    overlap_start VARCHAR(8),
+    overlap_end VARCHAR(8),
+    overlap_minutes INTEGER NOT NULL DEFAULT 0,
+    explanation TEXT NOT NULL,
+    math_proof TEXT NOT NULL,
+    suggested_action TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_conflicts_notice_id ON conflicts_cache(notice_id);
