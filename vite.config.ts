@@ -11,6 +11,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
+    allowedHosts: ['antarctic-appear-unloved.ngrok-free.dev'],
     port: 5173,
     proxy: {
       '/api': {
