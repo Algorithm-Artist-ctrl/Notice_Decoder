@@ -4,11 +4,24 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { cors } from 'hono/cors';
 import fs from 'fs';
 import path from 'path';
+
+// Load .env.local or .env
+try {
+  if (fs.existsSync('.env.local')) {
+    process.loadEnvFile?.('.env.local');
+  } else if (fs.existsSync('.env')) {
+    process.loadEnvFile?.('.env');
+  }
+} catch {
+  // Ignored
+}
+
 import { testNeonConnection, getDatabaseStatus } from '../src/db/connection';
 import { NoticeStore } from '../src/db/store';
 import { extractNoticeEvents } from '../src/lib/extractor';
 import { generateICalendar } from '../src/lib/ics-exporter';
 import { NoticeRecord, ExtractedEvent } from '../src/types';
+import { uploadToNeonStorage, invokeNeonHelloFunction, getNeonServicesDiagnostics } from '../src/lib/neon-services';
 import pdfParse from 'pdf-parse';
 import { createWorker } from 'tesseract.js';
 
@@ -35,6 +48,7 @@ testNeonConnection().then(status => {
  */
 app.get('/api/health', async (c) => {
   const dbStatus = await testNeonConnection();
+  const neonDiagnostics = await getNeonServicesDiagnostics();
   const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 5);
 
   return c.json({
@@ -45,6 +59,7 @@ app.get('/api/health', async (c) => {
     timestamp: new Date().toISOString(),
     system: {
       database: dbStatus,
+      neon: neonDiagnostics,
       aiExtraction: {
         provider: hasGeminiKey ? 'google_gemini_2.5_flash' : 'deterministic_heuristic_nlp',
         apiKeyConfigured: hasGeminiKey,
@@ -61,6 +76,22 @@ app.get('/api/health', async (c) => {
       fileLimit: '10 MB per file (enforced)',
     },
   });
+});
+
+/**
+ * Neon backend services diagnostics & inspection
+ */
+app.get('/api/neon/services', async (c) => {
+  const diagnostics = await getNeonServicesDiagnostics();
+  return c.json({ success: true, data: diagnostics });
+});
+
+/**
+ * Test Neon Function hello
+ */
+app.get('/api/neon/function-test', async (c) => {
+  const result = await invokeNeonHelloFunction();
+  return c.json(result);
 });
 
 /**
@@ -187,6 +218,8 @@ app.post('/api/notices/upload', async (c) => {
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
+    let buffer: Buffer | null = null;
+
     if (contentType.includes('application/json')) {
       const body = await c.req.json();
       rawText = body.text || '';
@@ -223,7 +256,7 @@ app.post('/api/notices/upload', async (c) => {
         }
 
         const arrayBuffer = await fileObj.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        buffer = Buffer.from(arrayBuffer);
 
         const lowerName = fileName.toLowerCase();
         if (lowerName.endsWith('.pdf')) {
@@ -299,9 +332,18 @@ app.post('/api/notices/upload', async (c) => {
 
     notice.extractedEventsCount = events.length;
 
-    // 3. Save to store
+    // 3. Save to Neon PostgreSQL
     await NoticeStore.saveNotice(notice);
     await NoticeStore.saveEvents(events);
+
+    // 4. Archive file to Neon Object Storage if binary asset was uploaded
+    if (buffer) {
+      uploadToNeonStorage(
+        `notices/${noticeId}/${fileName}`,
+        buffer,
+        fileType === 'pdf' ? 'application/pdf' : 'image/jpeg'
+      ).catch(e => console.warn('Background Neon storage upload warning:', e.message));
+    }
 
     return c.json({
       success: true,

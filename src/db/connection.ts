@@ -1,4 +1,15 @@
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
+import fs from 'fs';
+
+try {
+  if (fs.existsSync('.env.local')) {
+    process.loadEnvFile?.('.env.local');
+  } else if (fs.existsSync('.env')) {
+    process.loadEnvFile?.('.env');
+  }
+} catch {
+  // Ignored
+}
 
 export interface DatabaseStatus {
   configured: boolean;

@@ -42,3 +42,4 @@ data/
 *.sqlite
 *.sqlite3
 *.db
+.neon

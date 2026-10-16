@@ -2,6 +2,16 @@ import fs from 'fs';
 import path from 'path';
 import { neon } from '@neondatabase/serverless';
 
+try {
+  if (fs.existsSync('.env.local')) {
+    process.loadEnvFile?.('.env.local');
+  } else if (fs.existsSync('.env')) {
+    process.loadEnvFile?.('.env');
+  }
+} catch (e) {
+  // Ignored
+}
+
 async function runMigrations() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl || dbUrl.includes('ep-sample-pooler')) {
@@ -12,7 +22,7 @@ async function runMigrations() {
 
   console.log('🚀 Running database migrations against Neon PostgreSQL...');
   const sql = neon(dbUrl);
-  const schemaPath = path.resolve(__dirname, 'schema.sql');
+  const schemaPath = path.resolve(process.cwd(), 'src/db/schema.sql');
   const ddl = fs.readFileSync(schemaPath, 'utf-8');
 
   try {
