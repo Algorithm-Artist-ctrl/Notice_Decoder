@@ -12,12 +12,25 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    allowedHosts: ['antarctic-appear-unloved.ngrok-free.dev'],
+    allowedHosts: [
+      'noticedecoder.onrender.com',
+      'antarctic-appear-unloved.ngrok-free.dev'
+    ],
     port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three'],
+          motion: ['framer-motion'],
+        },
       },
     },
   },

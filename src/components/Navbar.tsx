@@ -9,7 +9,9 @@ import {
   Menu, 
   X, 
   Sparkles,
-  Globe
+  Globe,
+  UploadCloud,
+  ArrowRight
 } from 'lucide-react';
 
 export type NavTab = 'landing' | 'dashboard' | 'notices' | 'review' | 'conflicts' | 'calendar' | 'history' | 'settings';
@@ -35,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems: { id: NavTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'notices', label: 'Notices', icon: <FileText className="w-4 h-4" /> },
+    { id: 'notices', label: 'Upload Notice', icon: <UploadCloud className="w-4 h-4" /> },
     { id: 'calendar', label: 'Calendar', icon: <CalendarIcon className="w-4 h-4" /> },
     { id: 'conflicts', label: 'Conflicts', icon: <AlertTriangle className="w-4 h-4" />, badge: activeConflictsCount },
     { id: 'history', label: 'History', icon: <History className="w-4 h-4" /> },
@@ -71,6 +73,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1" aria-label="Main Navigation">
+            {/* Landing page link */}
+            <button
+              onClick={() => onSelectTab('landing')}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                currentTab === 'landing'
+                  ? 'bg-slate-100 text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              Overview
+            </button>
+
             {navItems.map((item) => {
               const isActive = currentTab === item.id || (item.id === 'notices' && currentTab === 'review');
               return (
@@ -135,6 +149,17 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-4 space-y-1">
+          <button
+            onClick={() => {
+              onSelectTab('landing');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium ${
+              currentTab === 'landing' ? 'bg-navy-900 text-white' : 'text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            Overview (Landing)
+          </button>
           {navItems.map((item) => (
             <button
               key={item.id}

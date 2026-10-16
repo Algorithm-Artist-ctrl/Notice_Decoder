@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Calendar, 
   UploadCloud, 
@@ -10,8 +10,10 @@ import {
   Sparkles,
   ChevronRight,
   MapPin,
-  Tag,
-  AlertCircle
+  RefreshCw,
+  AlertCircle,
+  HelpCircle,
+  X
 } from 'lucide-react';
 import { NoticeRecord, ExtractedEvent, ConflictRecord } from '../types';
 import { NavTab } from '../components/Navbar';
@@ -25,6 +27,8 @@ interface DashboardViewProps {
   onOpenNotice: (noticeId: string) => void;
   onLoadDemo: () => void;
   isDemoLoading: boolean;
+  dbError?: string | null;
+  onRetryConnection?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -35,16 +39,89 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenNotice,
   onLoadDemo,
   isDemoLoading,
+  dbError,
+  onRetryConnection,
 }) => {
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    return localStorage.getItem('notice_decoder_onboarding_dismissed') !== 'true';
+  });
+
+  const dismissOnboarding = () => {
+    setShowOnboarding(false);
+    localStorage.setItem('notice_decoder_onboarding_dismissed', 'true');
+  };
+
   const hardOverlaps = conflicts.filter(c => c.type === 'HARD_OVERLAP');
   const deadlineWarnings = conflicts.filter(c => c.type === 'DEADLINE_DURING_EVENT');
-  const deadlines = events.filter(e => e.kind === 'deadline_point');
-
   const isEmpty = notices.length === 0;
 
   return (
     <div className="space-y-8">
       
+      {/* Database Connection Error Banner */}
+      {dbError && (
+        <div className="bg-red-50 border border-red-300 rounded-2xl p-5 text-red-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center space-x-2.5">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5 sm:mt-0" />
+            <div>
+              <span className="font-bold text-sm block">Database Connection Error</span>
+              <p className="text-red-700">{dbError}</p>
+            </div>
+          </div>
+          {onRetryConnection && (
+            <button
+              onClick={onRetryConnection}
+              className="inline-flex items-center space-x-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition shrink-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Connection</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Optional First-Time Onboarding Guide */}
+      {showOnboarding && (
+        <div className="bg-gradient-to-r from-navy-900 to-navy-850 text-white rounded-2xl p-6 sm:p-7 shadow-md relative overflow-hidden">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 max-w-2xl">
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-500/20 text-brand-300 border border-brand-400/30 px-2.5 py-0.5 rounded-full">
+                  Quick Start Guide
+                </span>
+                <span className="text-xs text-slate-400">Welcome to Notice Decoder</span>
+              </div>
+              <h2 className="text-xl font-bold tracking-tight text-white">
+                Three steps to a conflict-free academic schedule:
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 text-xs">
+                <div className="bg-white/10 rounded-xl p-3 border border-white/10 space-y-1">
+                  <div className="font-bold text-brand-300">1. Upload Notice</div>
+                  <p className="text-slate-300 text-[11px]">Upload circulars, exam datesheets, or pasted portal text.</p>
+                </div>
+                <div className="bg-white/10 rounded-xl p-3 border border-white/10 space-y-1">
+                  <div className="font-bold text-brand-300">2. Review Gate</div>
+                  <p className="text-slate-300 text-[11px]">Verify extracted events against original document evidence.</p>
+                </div>
+                <div className="bg-white/10 rounded-xl p-3 border border-white/10 space-y-1">
+                  <div className="font-bold text-brand-300">3. Spot Conflicts & Export</div>
+                  <p className="text-slate-300 text-[11px]">Surfaces overlapping exams & exports .ics calendars.</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={dismissOnboarding}
+              className="text-slate-400 hover:text-white p-1 rounded-lg transition"
+              title="Dismiss guide"
+              aria-label="Dismiss guide"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Banner / Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div>
@@ -68,41 +145,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span>Upload Notice</span>
           </button>
           
-          {isEmpty && (
-            <button
-              onClick={onLoadDemo}
-              disabled={isDemoLoading}
-              className="inline-flex items-center space-x-1.5 bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 font-medium px-4 py-2.5 rounded-xl text-xs transition disabled:opacity-50"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-              <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
-            </button>
-          )}
+          <button
+            onClick={onLoadDemo}
+            disabled={isDemoLoading}
+            className="inline-flex items-center space-x-1.5 bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 font-medium px-4 py-2.5 rounded-xl text-xs transition disabled:opacity-50"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-brand-600" />
+            <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
+          </button>
         </div>
       </div>
 
-      {/* Empty State */}
+      {/* Empty State vs Active Dashboard */}
       {isEmpty ? (
-        <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center max-w-2xl mx-auto space-y-4">
-          <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-400">
-            <FileText className="w-7 h-7" />
+        <div className="bg-white border-2 border-dashed border-slate-300 rounded-3xl p-10 sm:p-14 text-center max-w-2xl mx-auto space-y-5 shadow-xs">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-400">
+            <FileText className="w-8 h-8 text-brand-600" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900">No notices uploaded yet</h2>
-          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-            Upload an academic circular, timetable, or exam notice to view upcoming commitments and detect schedule conflicts, or explore our sample notice.
-          </p>
-          <div className="flex items-center justify-center gap-3 pt-2">
+          
+          <div className="space-y-1.5">
+            <h2 className="text-xl font-bold text-slate-900">No notices uploaded yet</h2>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              Upload an academic circular, timetable, or exam notice to view upcoming commitments and detect schedule conflicts, or explore our pre-configured sample notice.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               onClick={() => onNavigate('notices')}
-              className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-xl text-xs transition shadow-xs"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-semibold px-6 py-3 rounded-xl text-xs transition shadow-sm"
             >
-              <UploadCloud className="w-4 h-4" />
+              <UploadCloud className="w-4 h-4 text-brand-300" />
               <span>Upload Notice</span>
             </button>
             <button
               onClick={onLoadDemo}
               disabled={isDemoLoading}
-              className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium px-5 py-2.5 rounded-xl text-xs transition"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-6 py-3 rounded-xl text-xs transition border border-slate-200"
             >
               <Sparkles className="w-4 h-4 text-brand-600" />
               <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
@@ -114,7 +193,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Key Metric Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
                 <span>Saved Notices</span>
                 <FileText className="w-4 h-4 text-slate-400" />
@@ -123,7 +202,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <p className="text-[11px] text-slate-500">Processed into schedule records</p>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
                 <span>Confirmed Events</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -132,7 +211,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <p className="text-[11px] text-emerald-700 font-medium">Verified by student review</p>
             </div>
 
-            <div className={`p-5 rounded-xl border shadow-xs space-y-2 ${hardOverlaps.length > 0 ? 'bg-red-50/70 border-red-200' : 'bg-white border-slate-200'}`}>
+            <div className={`p-5 rounded-2xl border shadow-xs space-y-2 ${hardOverlaps.length > 0 ? 'bg-red-50/70 border-red-200' : 'bg-white border-slate-200'}`}>
               <div className="flex items-center justify-between text-xs font-medium">
                 <span className={hardOverlaps.length > 0 ? 'text-red-800 font-semibold' : 'text-slate-500'}>
                   Hard Overlaps
@@ -145,7 +224,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <p className="text-[11px] text-red-600">Simultaneous event clashes</p>
             </div>
 
-            <div className={`p-5 rounded-xl border shadow-xs space-y-2 ${deadlineWarnings.length > 0 ? 'bg-amber-50/70 border-amber-200' : 'bg-white border-slate-200'}`}>
+            <div className={`p-5 rounded-2xl border shadow-xs space-y-2 ${deadlineWarnings.length > 0 ? 'bg-amber-50/70 border-amber-200' : 'bg-white border-slate-200'}`}>
               <div className="flex items-center justify-between text-xs font-medium">
                 <span className={deadlineWarnings.length > 0 ? 'text-amber-800 font-semibold' : 'text-slate-500'}>
                   Deadline Warnings
@@ -181,7 +260,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div className="space-y-2">
                 {conflicts.slice(0, 2).map((c) => (
-                  <div key={c.id} className="bg-white/80 p-3 rounded-lg border border-red-200 flex items-center justify-between text-xs">
+                  <div key={c.id} className="bg-white/80 p-3 rounded-xl border border-red-200 flex items-center justify-between text-xs">
                     <div>
                       <span className="font-bold text-red-950">
                         {c.type === 'HARD_OVERLAP' ? `[${c.overlapMinutes}m Overlap]` : '[Deadline Alert]'}
@@ -216,7 +295,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </button>
               </div>
 
-              <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 shadow-xs">
+              <div className="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 shadow-xs overflow-hidden">
                 {events.slice(0, 5).map((ev) => (
                   <div key={ev.id} className="p-4 hover:bg-slate-50 transition flex items-start justify-between gap-4">
                     <div className="space-y-1">
@@ -247,7 +326,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         )}
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                    <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
                       {ev.date}
                     </span>
                   </div>
@@ -271,7 +350,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </button>
               </div>
 
-              <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 shadow-xs">
+              <div className="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 shadow-xs overflow-hidden">
                 {notices.map((n) => (
                   <div 
                     key={n.id}
@@ -288,7 +367,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-500">
                       <span>{n.extractedEventsCount} events extracted</span>
-                      <span className="text-brand-600 font-medium">Review &rarr;</span>
+                      <span className="text-brand-600 font-semibold flex items-center space-x-0.5">
+                        <span>Review</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </span>
                     </div>
                   </div>
                 ))}

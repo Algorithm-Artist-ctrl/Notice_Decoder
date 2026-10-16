@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UploadCloud, 
   CheckCircle2, 
@@ -7,9 +8,15 @@ import {
   Check, 
   Info,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Clock,
+  Shield,
+  Layers,
+  FileCheck2,
+  Share2
 } from 'lucide-react';
 import { NavTab } from '../components/Navbar';
+import { NoticeTransform3D } from '../components/NoticeTransform3D';
 
 interface LandingViewProps {
   onNavigate: (tab: NavTab) => void;
@@ -25,48 +32,54 @@ export const LandingView: React.FC<LandingViewProps> = ({
   const [activeInteractiveTab, setActiveInteractiveTab] = useState<'visual' | 'code' | 'raw'>('visual');
 
   return (
-    <div className="space-y-16 pb-16">
+    <div className="space-y-20 pb-20">
       
-      {/* 1. Hero Section */}
-      <section className="relative overflow-hidden bg-white border-b border-slate-200 pt-16 pb-20 rounded-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-6">
-            
-            <div className="inline-flex items-center space-x-2 bg-brand-50 border border-brand-200 text-brand-800 text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-brand-600"></span>
-              <span>Your academic schedule, made clear</span>
+      {/* 1. Hero Section with 3D Notice Transformation */}
+      <section className="relative overflow-hidden bg-white border border-slate-200/80 pt-12 pb-16 px-6 sm:px-10 lg:px-12 rounded-3xl shadow-xs">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          
+          {/* Left Column: Editorial Value Proposition & Actions */}
+          <motion.div 
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="lg:col-span-7 space-y-6 text-left"
+          >
+            <div className="inline-flex items-center space-x-2 bg-brand-50/80 border border-brand-200/80 text-brand-800 text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
+              <span>Your academic schedule, made clear.</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Turn every college notice into a <span className="text-brand-600">clear plan.</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
+              Turn every college notice into a <span className="text-brand-600 underline decoration-brand-200 decoration-wavy">clear plan.</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
-              Understand important dates, detect scheduling conflicts, and keep your academic commitments organized. 
-              Notice Decoder converts complex circulars into verified, calendar-ready events.
+            <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-xl">
+              Extract important dates, review event details, spot scheduling conflicts and keep your academic commitments organized. Notice Decoder converts unstructured circulars into verified, calendar-ready schedules.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
               <button
                 onClick={() => onNavigate('notices')}
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-medium px-6 py-3.5 rounded-xl shadow-xs transition text-sm"
+                className="inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-semibold px-6 py-3.5 rounded-xl shadow-sm hover:shadow transition-all text-sm group"
               >
-                <UploadCloud className="w-4 h-4 text-brand-300" />
+                <UploadCloud className="w-4 h-4 text-brand-300 transition-transform group-hover:-translate-y-0.5" />
                 <span>Upload a Notice</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-0.5" />
               </button>
 
               <button
                 onClick={onLoadDemo}
                 disabled={isDemoLoading}
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-medium px-6 py-3.5 rounded-xl transition text-sm disabled:opacity-50"
+                className="inline-flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-semibold px-6 py-3.5 rounded-xl transition text-sm disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4 text-brand-600" />
-                <span>{isDemoLoading ? 'Loading example...' : 'Explore an example'}</span>
+                <span>{isDemoLoading ? 'Loading sample...' : 'Explore an example'}</span>
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500 pt-3">
+            {/* Credibility checkpoints without absolute/unverified claims */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
               <span className="flex items-center space-x-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>Review extracted details</span>
@@ -80,83 +93,95 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 <span>Your schedule, organized</span>
               </span>
             </div>
+          </motion.div>
 
-          </div>
+          {/* Right Column: 3D Notice Transformation Scene */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
+            className="lg:col-span-5 relative"
+          >
+            <div className="bg-gradient-to-br from-slate-50 via-white to-brand-50/40 rounded-2xl border border-slate-200/80 p-2 shadow-2xs">
+              <NoticeTransform3D />
+            </div>
+          </motion.div>
+
         </div>
       </section>
 
       {/* 2. Interactive Conflict Demonstration — Drawn to Scale */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+      <section className="max-w-7xl mx-auto">
+        <div className="bg-white border border-slate-200 rounded-3xl shadow-xs overflow-hidden">
           
-          <div className="border-b border-slate-200 px-6 py-5 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="border-b border-slate-200 px-6 sm:px-8 py-6 bg-slate-50/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-brand-700 bg-brand-100 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 bg-brand-100 px-2.5 py-0.5 rounded-full">
                   Interactive Conflict Engine
                 </span>
-                <span className="text-xs text-slate-500 font-mono">Sample Timetable Demonstration</span>
+                <span className="text-xs text-slate-500 font-mono">Sample Schedule Demonstration</span>
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mt-1">
-                Where the Schedule Actually Breaks
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">
+                Where Academic Schedules Actually Break
               </h2>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Multiple commitments buried in a continuous circular paragraph. Here is how overlaps are surfaced.
+              <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+                Multiple commitments buried in continuous circular text. Notice Decoder isolates each event and surfaces hidden collisions.
               </p>
             </div>
 
-            <div className="flex items-center bg-slate-200 p-1 rounded-lg text-xs font-medium">
+            <div className="flex items-center bg-slate-200/80 p-1 rounded-xl text-xs font-semibold self-start md:self-auto">
               <button
                 onClick={() => setActiveInteractiveTab('visual')}
-                className={`px-3 py-1.5 rounded-md transition ${activeInteractiveTab === 'visual' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}
+                className={`px-3.5 py-1.5 rounded-lg transition ${activeInteractiveTab === 'visual' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
               >
-                Visual Timeline
+                Visual Scale
               </button>
               <button
                 onClick={() => setActiveInteractiveTab('code')}
-                className={`px-3 py-1.5 rounded-md transition ${activeInteractiveTab === 'code' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}
+                className={`px-3.5 py-1.5 rounded-lg transition ${activeInteractiveTab === 'code' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 Math Proof
               </button>
               <button
                 onClick={() => setActiveInteractiveTab('raw')}
-                className={`px-3 py-1.5 rounded-md transition ${activeInteractiveTab === 'raw' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}
+                className={`px-3.5 py-1.5 rounded-lg transition ${activeInteractiveTab === 'raw' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
               >
-                Sample Text
+                Raw Circular
               </button>
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-6 sm:p-8">
             {activeInteractiveTab === 'raw' && (
-              <div className="bg-slate-900 text-slate-100 p-5 rounded-xl font-mono text-sm leading-relaxed border border-slate-800">
-                <p className="text-brand-300 mb-2">// Sample department circular:</p>
+              <div className="bg-slate-900 text-slate-100 p-6 rounded-2xl font-mono text-sm leading-relaxed border border-slate-800 space-y-3">
+                <p className="text-brand-300 text-xs font-bold uppercase tracking-wider">// Sample College Circular Text:</p>
                 <p className="text-slate-200">
-                  "All III-year CSE students: <span className="bg-blue-900/60 text-blue-200 px-1 py-0.5 rounded">Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204.</span> <span className="bg-amber-900/60 text-amber-200 px-1 py-0.5 rounded">Lab records must be submitted to the department office by 12:00 noon on 13 Nov.</span> <span className="bg-purple-900/60 text-purple-200 px-1 py-0.5 rounded">A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.</span>"
+                  "All III-year CSE students: <span className="bg-blue-900/60 text-blue-200 px-1.5 py-0.5 rounded">Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204.</span> <span className="bg-amber-900/60 text-amber-200 px-1.5 py-0.5 rounded">Lab records must be submitted to the department office by 12:00 noon on 13 Nov.</span> <span className="bg-purple-900/60 text-purple-200 px-1.5 py-0.5 rounded">A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.</span>"
                 </p>
-                <div className="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400">
-                  Notice Decoder isolates the 3 events, normalizes times, and detects the 30-minute collision and noon deadline alert.
+                <div className="pt-3 border-t border-slate-800 text-xs text-slate-400">
+                  Notice Decoder extracts the 3 distinct events, calculates start/end bounds, and identifies the 30-minute test/lecture collision and the noon submission deadline warning.
                 </div>
               </div>
             )}
 
             {activeInteractiveTab === 'code' && (
               <div className="space-y-4">
-                <div className="bg-slate-900 text-slate-100 p-5 rounded-xl font-mono text-xs leading-relaxed">
-                  <div className="text-emerald-400 font-semibold mb-2">/* Deterministic Interval Overlap Theorem */</div>
+                <div className="bg-slate-900 text-slate-100 p-6 rounded-2xl font-mono text-xs leading-relaxed space-y-3">
+                  <div className="text-emerald-400 font-bold uppercase tracking-wider">/* Deterministic Interval Overlap Theorem */</div>
                   <div className="text-slate-300">
-                    Two valid timed events A and B overlap if and only if:<br />
-                    <span className="text-brand-400 font-bold">A.start &lt; B.end AND B.start &lt; A.end</span>
+                    Two valid timed intervals [startA, endA) and [startB, endB) overlap if and only if:<br />
+                    <span className="text-brand-400 font-bold">startA &lt; endB &amp;&amp; startB &lt; endA</span>
                   </div>
-                  <div className="mt-3 text-slate-400">
-                    overlapStart = max(10:00, 11:00) = <span className="text-white font-bold">11:00 AM</span><br />
-                    overlapEnd   = min(11:30, 12:30) = <span className="text-white font-bold">11:30 AM</span><br />
-                    overlapDuration = 11:30 - 11:00  = <span className="text-red-400 font-bold">30 MINUTES OVERLAP</span>
+                  <div className="text-slate-400 pl-3 border-l-2 border-slate-700 space-y-1">
+                    <div>overlapStart = max(10:00, 11:00) = <span className="text-white font-bold">11:00 AM</span></div>
+                    <div>overlapEnd   = min(11:30, 12:30) = <span className="text-white font-bold">11:30 AM</span></div>
+                    <div>overlapDuration = 11:30 - 11:00  = <span className="text-red-400 font-bold">30 MINUTES SIMULTANEOUS CLASH</span></div>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800 text-amber-300">
-                    /* Discrete Deadline-Point Rule */<br />
-                    A deadline D lands inside event E if: <span className="text-white font-bold">E.start &lt;= D &lt; E.end</span><br />
-                    Guest Lecture: 11:00 &lt;= 12:00 &lt; 12:30 ===&gt; <span className="text-amber-400 font-bold">DEADLINE DURING EVENT ALERT</span>
+                  <div className="pt-3 border-t border-slate-800 text-amber-300 space-y-1">
+                    <div className="font-bold">/* Discrete Deadline-Point Rule */</div>
+                    <div>A point deadline D occurs during event E if: <span className="text-white font-bold">E.start &lt;= D &lt; E.end</span></div>
+                    <div className="text-amber-400 font-bold">11:00 &lt;= 12:00 (Noon) &lt; 12:30 ===&gt; DEADLINE DURING EVENT ALERT</div>
                   </div>
                 </div>
               </div>
@@ -166,8 +191,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
               <div className="space-y-6">
                 
                 {/* Visual Scale Diagram */}
-                <div className="relative border border-slate-200 rounded-xl p-5 bg-gradient-to-b from-white to-slate-50">
-                  <div className="flex justify-between text-xs font-mono font-semibold text-slate-500 mb-6 border-b border-slate-200 pb-2">
+                <div className="relative border border-slate-200 rounded-2xl p-6 bg-gradient-to-b from-white to-slate-50">
+                  <div className="flex justify-between text-xs font-mono font-semibold text-slate-500 mb-8 border-b border-slate-200 pb-2">
                     <span>10:00 AM</span>
                     <span>11:00 AM</span>
                     <span>12:00 PM (Noon)</span>
@@ -179,32 +204,32 @@ export const LandingView: React.FC<LandingViewProps> = ({
                     
                     {/* Event 1: Internal Test 2 (10:00 to 11:30) -> 0% to 50% */}
                     <div 
-                      className="absolute top-0 h-10 rounded-lg bg-blue-100 border border-blue-400 px-3 py-1 flex items-center justify-between text-xs shadow-2xs"
+                      className="absolute top-0 h-10 rounded-xl bg-blue-100 border border-blue-400 px-3.5 py-1 flex items-center justify-between text-xs shadow-2xs"
                       style={{ left: '0%', width: '50%' }}
                     >
                       <div className="truncate font-semibold text-blue-900">
                         Internal Test 2 <span className="text-blue-700 font-normal">· Rm 204</span>
                       </div>
-                      <span className="text-[10px] font-mono text-blue-800 font-medium">10:00–11:30</span>
+                      <span className="text-[10px] font-mono text-blue-800 font-semibold">10:00–11:30</span>
                     </div>
 
                     {/* Event 2: Guest Lecture (11:00 to 12:30) -> 33.3% to 83.3% */}
                     <div 
-                      className="absolute top-12 h-10 rounded-lg bg-purple-100 border border-purple-400 px-3 py-1 flex items-center justify-between text-xs shadow-2xs"
+                      className="absolute top-12 h-10 rounded-xl bg-purple-100 border border-purple-400 px-3.5 py-1 flex items-center justify-between text-xs shadow-2xs"
                       style={{ left: '33.33%', width: '50%' }}
                     >
                       <div className="truncate font-semibold text-purple-900">
                         Guest Lecture: AI in Healthcare <span className="text-purple-700 font-normal">· Sem Hall</span>
                       </div>
-                      <span className="text-[10px] font-mono text-purple-800 font-medium">11:00–12:30</span>
+                      <span className="text-[10px] font-mono text-purple-800 font-semibold">11:00–12:30</span>
                     </div>
 
                     {/* Overlap Strip: 11:00 to 11:30 -> 33.33% to 50% */}
                     <div 
-                      className="absolute top-0 h-22 rounded border-2 border-dashed border-red-500 bg-red-500/20 pointer-events-none flex items-center justify-center"
+                      className="absolute top-0 h-22 rounded-xl border-2 border-dashed border-red-500 bg-red-500/20 pointer-events-none flex items-center justify-center"
                       style={{ left: '33.33%', width: '16.67%' }}
                     >
-                      <span className="bg-red-600 text-white text-[9px] font-bold px-1 py-0.5 rounded shadow-xs">
+                      <span className="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
                         30m Clash
                       </span>
                     </div>
@@ -214,25 +239,25 @@ export const LandingView: React.FC<LandingViewProps> = ({
                       className="absolute top-0 bottom-0 w-0.5 bg-amber-500 z-10"
                       style={{ left: '66.66%' }}
                     >
-                      <div className="absolute -top-3 -left-16 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
-                        📍 Lab Deadline 12:00
+                      <div className="absolute -top-3.5 -left-16 bg-amber-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                        📍 Lab Due 12:00
                       </div>
                     </div>
 
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-6 border-t border-slate-200 text-xs">
-                    <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                      <span className="font-bold text-red-900 block mb-0.5">⚠️ Direct Overlap (30 Min)</span>
-                      <p className="text-red-700">Internal Test 2 and Guest Lecture collide from 11:00 to 11:30 AM.</p>
+                    <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 space-y-1">
+                      <span className="font-bold text-red-950 block">⚠️ Direct Overlap (30 Min)</span>
+                      <p className="text-red-800">Internal Test 2 and Guest Lecture collide between 11:00 AM and 11:30 AM.</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                      <span className="font-bold text-amber-900 block mb-0.5">⏱️ Deadline Alert</span>
-                      <p className="text-amber-700">12:00 noon lab submission occurs while seated in the Guest Lecture.</p>
+                    <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
+                      <span className="font-bold text-amber-950 block">⏱️ Deadline Alert</span>
+                      <p className="text-amber-800">12:00 noon lab submission occurs while seated in the Guest Lecture.</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                      <span className="font-bold text-emerald-900 block mb-0.5">✅ Endpoint Independence</span>
-                      <p className="text-emerald-700">Test ends at 11:30 AM; does not falsely clash with the 12:00 noon deadline.</p>
+                    <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+                      <span className="font-bold text-emerald-950 block">✅ Endpoint Independence</span>
+                      <p className="text-emerald-800">Test ends at 11:30 AM; does not falsely flag an overlap with the noon deadline.</p>
                     </div>
                   </div>
 
@@ -242,16 +267,16 @@ export const LandingView: React.FC<LandingViewProps> = ({
             )}
           </div>
 
-          <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-between">
-            <span className="text-xs text-slate-500">
-              Deterministic Interval Calculation: <span className="font-mono text-slate-700 font-semibold">[10:00, 11:30) ∩ [11:00, 12:30)</span>
+          <div className="bg-slate-50 border-t border-slate-200 px-6 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span className="text-xs text-slate-500 font-mono">
+              Deterministic Interval Intersection: [10:00, 11:30) ∩ [11:00, 12:30)
             </span>
             <button
               onClick={onLoadDemo}
               disabled={isDemoLoading}
-              className="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center space-x-1"
+              className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center space-x-1 self-start sm:self-auto"
             >
-              <span>Explore Example in Decoder</span>
+              <span>Explore this example in Review Gate</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -259,126 +284,97 @@ export const LandingView: React.FC<LandingViewProps> = ({
         </div>
       </section>
 
-      {/* 3. The 5-Step Human-in-the-Loop Architecture */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            One Notice In. One Verified Calendar Out.
+      {/* 3. The 3-Step Human-in-the-Loop Journey */}
+      <section className="max-w-7xl mx-auto space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="inline-block bg-slate-100 text-slate-700 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-slate-200">
+            Human-in-the-Loop Process
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            From Raw Circular to Verified Calendar
           </h2>
-          <p className="text-sm text-slate-600 mt-2">
-            AI assists with entity extraction, but you confirm every detail before anything reaches your calendar.
+          <p className="text-sm text-slate-600">
+            Intelligent entity extraction pairs with explicit human review before any record enters your official schedule.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3 relative">
-            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-800 font-mono font-bold text-sm flex items-center justify-center">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4 relative group hover:border-slate-300 transition">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 font-mono font-bold text-sm flex items-center justify-center">
               01
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">Intake & OCR</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Accepts digital PDFs, phone camera photos, or pasted circular text up to 10 MB.
-            </p>
+            <div className="space-y-1">
+              <h3 className="font-bold text-slate-900 text-base">Upload College Notice</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Accepts PDF circulars, phone camera photos of noticeboards, or pasted WhatsApp circular text up to 10 MB.
+              </p>
+            </div>
+            <ul className="text-xs text-slate-600 space-y-1.5 pt-2 border-t border-slate-100">
+              <li className="flex items-center space-x-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Text-layer extraction & OCR fallback</span>
+              </li>
+              <li className="flex items-center space-x-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Client & server 10 MB validation</span>
+              </li>
+            </ul>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3 relative">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-800 font-mono font-bold text-sm flex items-center justify-center">
+          <div className="bg-white p-6 rounded-2xl border-2 border-brand-500 shadow-xs space-y-4 relative">
+            <div className="absolute -top-3 right-5 bg-brand-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+              Review Gate
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-800 font-mono font-bold text-sm flex items-center justify-center">
               02
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">Entity Extraction</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Extracts title, category, date, start, end, venue, and audience with exact evidence references.
-            </p>
+            <div className="space-y-1">
+              <h3 className="font-bold text-slate-900 text-base">Check & Correct Evidence</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Review proposed events side-by-side with original document evidence. Fix ambiguous times or missing venues instantly.
+              </p>
+            </div>
+            <ul className="text-xs text-slate-600 space-y-1.5 pt-2 border-t border-slate-100">
+              <li className="flex items-center space-x-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Every field tied to source evidence</span>
+              </li>
+              <li className="flex items-center space-x-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Flagged warnings for ambiguous dates</span>
+              </li>
+            </ul>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border-2 border-brand-500 shadow-2xs space-y-3 relative">
-            <div className="w-8 h-8 rounded-lg bg-brand-100 text-brand-800 font-mono font-bold text-sm flex items-center justify-center">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4 relative group hover:border-slate-300 transition">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-sm flex items-center justify-center">
               03
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">Review Gate</h3>
-            <p className="text-xs text-slate-500 leading-relaxed font-medium text-brand-900">
-              Side-by-side editor. Flagged fields highlight ambiguities for instant user correction.
-            </p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3 relative">
-            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 font-mono font-bold text-sm flex items-center justify-center">
-              04
+            <div className="space-y-1">
+              <h3 className="font-bold text-slate-900 text-base">Detect Conflicts & Export</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                The conflict engine evaluates schedule intervals and exports confirmed commitments as standard RFC 5545 .ics calendars.
+              </p>
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">Conflict Engine</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Deterministic interval arithmetic. Calculates exact overlap durations in minutes.
-            </p>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3 relative">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 font-mono font-bold text-sm flex items-center justify-center">
-              05
-            </div>
-            <h3 className="font-bold text-slate-900 text-sm">RFC 5545 Export</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Downloads standard <code className="font-mono">.ics</code> files compatible with Google, Apple & Outlook.
-            </p>
+            <ul className="text-xs text-slate-600 space-y-1.5 pt-2 border-t border-slate-100">
+              <li className="flex items-center space-x-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Deterministic mathematical verification</span>
+              </li>
+              <li className="flex items-center space-x-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Universal Google, Apple & Outlook export</span>
+              </li>
+            </ul>
           </div>
 
         </div>
       </section>
 
-      {/* 4. Differentiator Matrix: Manual Reading vs Notice Decoder */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-navy-900 rounded-2xl p-8 text-white">
-          <div className="max-w-2xl mb-8">
-            <h2 className="text-2xl font-bold tracking-tight">Why Manual Notice Sorting Fails</h2>
-            <p className="text-sm text-slate-300 mt-1">
-              Comparing prose across multiple circulars requires mental arithmetic that is easy to get wrong during busy exam weeks.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-navy-700 text-slate-400">
-                  <th className="py-3 px-4 font-semibold uppercase">Action</th>
-                  <th className="py-3 px-4 font-semibold uppercase text-red-300">By Hand (Manual)</th>
-                  <th className="py-3 px-4 font-semibold uppercase text-emerald-300">With Notice Decoder</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-navy-800 text-slate-200">
-                <tr>
-                  <td className="py-3.5 px-4 font-medium text-white">Finding Events</td>
-                  <td className="py-3.5 px-4 text-slate-300">Re-read paragraph, manually note dates</td>
-                  <td className="py-3.5 px-4 text-emerald-300 font-semibold">Extracted structured fields in one pass</td>
-                </tr>
-                <tr>
-                  <td className="py-3.5 px-4 font-medium text-white">Comparing Times</td>
-                  <td className="py-3.5 px-4 text-slate-300">Mental math across sentences; overlaps missed</td>
-                  <td className="py-3.5 px-4 text-emerald-300 font-semibold">Exact overlap duration computed (e.g. 30m)</td>
-                </tr>
-                <tr>
-                  <td className="py-3.5 px-4 font-medium text-white">Deadlines</td>
-                  <td className="py-3.5 px-4 text-slate-300">Treated loosely as "anytime that day"</td>
-                  <td className="py-3.5 px-4 text-emerald-300 font-semibold">Treated as discrete point in time</td>
-                </tr>
-                <tr>
-                  <td className="py-3.5 px-4 font-medium text-white">Fixing Mistakes</td>
-                  <td className="py-3.5 px-4 text-slate-300">Re-read entire document again</td>
-                  <td className="py-3.5 px-4 text-emerald-300 font-semibold">Inline field editor with real-time recalculation</td>
-                </tr>
-                <tr>
-                  <td className="py-3.5 px-4 font-medium text-white">Calendar Entry</td>
-                  <td className="py-3.5 px-4 text-slate-300">Type every field into calendar manually</td>
-                  <td className="py-3.5 px-4 text-emerald-300 font-semibold">Single-click standard RFC 5545 .ics download</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Transparent Capabilities & Limitations */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6">
+      {/* 4. Transparent Capabilities & Realistic Boundaries */}
+      <section className="max-w-7xl mx-auto">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6">
           <div className="flex items-center space-x-2 text-slate-900 font-bold text-lg">
             <Info className="w-5 h-5 text-brand-600" />
             <h3>Transparent System Capabilities & Boundaries</h3>
@@ -428,73 +424,33 @@ export const LandingView: React.FC<LandingViewProps> = ({
         </div>
       </section>
 
-      {/* 6. Proposed Pricing Model */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <div className="inline-block bg-slate-100 text-slate-700 text-[11px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-slate-200 mb-2">
-            Pricing Plans (Proposal)
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            Simple, Transparent Pricing
+      {/* 5. Bottom Call to Action */}
+      <section className="max-w-7xl mx-auto bg-navy-900 rounded-3xl p-8 sm:p-12 text-white text-center space-y-6">
+        <div className="max-w-2xl mx-auto space-y-3">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            Ready to organize your academic schedule?
           </h2>
-          <p className="text-xs text-slate-500 mt-2">
-            Proposed subscription tiers for students, class coordinators, and academic institutions.
+          <p className="text-sm text-slate-300 leading-relaxed">
+            Upload your first circular or explore our sample notice to experience conflict-free timetable management.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-4">
-            <h4 className="font-bold text-slate-900 text-sm">Free Student</h4>
-            <div className="text-2xl font-extrabold text-slate-900">₹0 <span className="text-xs font-normal text-slate-500">/ forever</span></div>
-            <p className="text-xs text-slate-500">Essential schedule decoding for individual university students.</p>
-            <ul className="text-xs space-y-2 text-slate-600 pt-2 border-t border-slate-100">
-              <li>✓ 15 notices per month</li>
-              <li>✓ PDF text extraction</li>
-              <li>✓ Deterministic conflict engine</li>
-              <li>✓ RFC 5545 .ics export</li>
-            </ul>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border-2 border-brand-500 shadow-xs space-y-4 relative">
-            <div className="absolute -top-3 right-4 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Most Popular
-            </div>
-            <h4 className="font-bold text-slate-900 text-sm">Student Pro</h4>
-            <div className="text-2xl font-extrabold text-slate-900">₹99 <span className="text-xs font-normal text-slate-500">/ sem</span></div>
-            <p className="text-xs text-slate-500">For class coordinators and active student leaders.</p>
-            <ul className="text-xs space-y-2 text-slate-600 pt-2 border-t border-slate-100">
-              <li>✓ Unlimited notice decoding</li>
-              <li>✓ Full OCR for camera scans</li>
-              <li>✓ Batch circular upload</li>
-              <li>✓ Conflict mitigation suggestions</li>
-            </ul>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-4">
-            <h4 className="font-bold text-slate-900 text-sm">Department Pilot</h4>
-            <div className="text-2xl font-extrabold text-slate-900">₹4,999 <span className="text-xs font-normal text-slate-500">/ sem</span></div>
-            <p className="text-xs text-slate-500">For academic department coordinators preparing circulars.</p>
-            <ul className="text-xs space-y-2 text-slate-600 pt-2 border-t border-slate-100">
-              <li>✓ Pre-release conflict check</li>
-              <li>✓ Automated circular drafting</li>
-              <li>✓ Department timetable validation</li>
-              <li>✓ Multi-faculty access</li>
-            </ul>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-4">
-            <h4 className="font-bold text-slate-900 text-sm">Institutional</h4>
-            <div className="text-2xl font-extrabold text-slate-900">Custom <span className="text-xs font-normal text-slate-500">/ campus</span></div>
-            <p className="text-xs text-slate-500">Campus-wide deployment integrated with ERP and LMS systems.</p>
-            <ul className="text-xs space-y-2 text-slate-600 pt-2 border-t border-slate-100">
-              <li>✓ Campus portal sync</li>
-              <li>✓ Multi-department auditing</li>
-              <li>✓ Dedicated database instance</li>
-              <li>✓ Priority support & SLA</li>
-            </ul>
-          </div>
-
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onClick={() => onNavigate('notices')}
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold px-6 py-3.5 rounded-xl shadow-md transition text-sm"
+          >
+            <UploadCloud className="w-4 h-4" />
+            <span>Upload a Notice</span>
+          </button>
+          <button
+            onClick={onLoadDemo}
+            disabled={isDemoLoading}
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-6 py-3.5 rounded-xl transition text-sm disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4 text-brand-300" />
+            <span>Try sample notice</span>
+          </button>
         </div>
       </section>
 
