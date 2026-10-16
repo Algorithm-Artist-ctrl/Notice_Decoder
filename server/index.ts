@@ -417,13 +417,18 @@ if (fs.existsSync(distDir)) {
   });
 }
 
-const PORT = parseInt(process.env.PORT || '3000', 10);
-const HOST = '0.0.0.0';
-console.log(`📡 Notice Decoder Server listening on http://${HOST}:${PORT}...`);
+export { app };
 
-serve({
-  fetch: app.fetch,
-  port: PORT,
-  hostname: HOST,
-});
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = parseInt(process.env.PORT || '3000', 10);
+  const HOST = '0.0.0.0';
+  console.log(`📡 Notice Decoder Server listening on http://${HOST}:${PORT}...`);
+
+  serve({
+    fetch: app.fetch,
+    port: PORT,
+    hostname: HOST,
+  });
+}
+
 

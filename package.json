@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx server/index.ts",
-    "dev": "vite --host 0.0.0.0",
+    "dev": "tsx scripts/dev.ts",
     "server": "tsx server/index.ts",
     "build": "tsc && vite build",
     "preview": "vite preview --host 0.0.0.0",

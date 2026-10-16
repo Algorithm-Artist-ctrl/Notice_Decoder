@@ -270,6 +270,7 @@ export class NoticeStore {
   static async getConflictAnalysis(noticeId?: string): Promise<{
     events: ExtractedEvent[];
     conflicts: ConflictRecord[];
+    hasConflicts: boolean;
     summary: {
       totalEvents: number;
       hardOverlaps: number;
@@ -286,6 +287,7 @@ export class NoticeStore {
     return {
       events,
       conflicts: analysis.conflicts,
+      hasConflicts: analysis.hasConflicts,
       summary: {
         totalEvents: events.length,
         hardOverlaps: analysis.hardOverlapsCount,

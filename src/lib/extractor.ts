@@ -157,13 +157,16 @@ export function extractEntitiesHeuristic(text: string, options: { timezone?: str
     const segment = seg.trim();
 
     // Check for DEADLINE clause
-    // Phrases: "must be submitted by", "submission deadline", "last date for submission", "submit by", "deadline:"
-    const deadlineKeywordMatch = segment.match(/(?:must be submitted (?:to [^b]+)?by|submission deadline|last date(?:\s+for\s+submission)?|submit(?:ted)?\s+by|deadline\s*[:\-])\s*([0-9]{1,2}(?::[0-9]{2})?\s*(?:am|pm|noon|midnight)?)/i);
+    // Phrases: "must be submitted by", "submission deadline", "last date for submission", "submit by", "deadline:", "deadline is ... at 14:00"
+    const isDeadlineClause = /(?:must be submitted|submission deadline|last date|submit(?:ted)?\s+by|deadline)/i.test(segment);
     
-    if (deadlineKeywordMatch || /submission/i.test(segment) && /by\s+\d/i.test(segment)) {
+    if (isDeadlineClause) {
       // It's a point-in-time deadline
-      let deadlineTimeRaw = deadlineKeywordMatch ? deadlineKeywordMatch[1] : null;
-      if (!deadlineTimeRaw) {
+      let deadlineTimeRaw: string | null = null;
+      const timeInSegment = segment.match(/(?:by|at|before)\s+([0-9]{1,2}(?::[0-9]{2})?\s*(?:am|pm|noon|midnight)?)/i);
+      if (timeInSegment) {
+        deadlineTimeRaw = timeInSegment[1];
+      } else {
         const timeFallback = segment.match(/(\d{1,2}(?::\d{2})?\s*(?:am|pm|noon|midnight))/i);
         if (timeFallback) deadlineTimeRaw = timeFallback[1];
       }
@@ -215,8 +218,8 @@ export function extractEntitiesHeuristic(text: string, options: { timezone?: str
     }
 
     // Check for TIMED EVENT clause (e.g. Test, Lecture, Workshop, Meeting, Exam)
-    // Looking for time range: "from 10:00 AM to 11:30 AM" or "11:00 AM to 12:30 PM" or "10:00 – 11:30 AM"
-    const timeRangeMatch = segment.match(/(?:from\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*(?:to|–|-)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))/i);
+    // Looking for time range: "from 10:00 AM to 11:30 AM" or "11:00 AM to 12:30 PM" or "09:00 to 11:00"
+    const timeRangeMatch = segment.match(/(?:from\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*(?:to|–|-)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
 
     if (timeRangeMatch) {
       let rawStart = timeRangeMatch[1];
