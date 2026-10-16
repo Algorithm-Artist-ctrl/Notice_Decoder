@@ -77,8 +77,8 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                   </span>
                   
                   {n.isDemo && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
-                      Demo Notice
+                    <span className="text-[9px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                      Sample Notice
                     </span>
                   )}
 

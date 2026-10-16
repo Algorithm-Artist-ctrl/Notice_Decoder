@@ -1,15 +1,15 @@
 # Notice Decoder
 
-> **Turn College Notices into Clear, Conflict-Free Schedules.**  
-> Built by **Byte_Brains** for Problem Statement **PS-02**.
+> **Your academic schedule, made clear.**  
+> An independent academic productivity platform for students, faculty, and academic departments.
 
 ---
 
 ## Overview
 
-College students and departments manage critical academic timetables through unstructured circulars—scanned notices, PDF attachments, and informal messaging channels. Manually reading these notices often leads to missed submission deadlines and conflicting exam or lecture commitments.
+College students and academic coordinators manage critical schedules through unstructured circulars—scanned notices, PDF attachments, and messaging groups. Manually reading these notices often leads to missed submission deadlines and conflicting exam or lecture commitments.
 
-**Notice Decoder** bridges the gap between chaotic circular prose and standard calendar software. It combines document intake (PDF text extraction and OCR for image scans), AI and rule-based entity extraction, side-by-side human-in-the-loop verification, deterministic interval conflict mathematics, and universal RFC 5545 `.ics` export.
+**Notice Decoder** bridges the gap between circular prose and standard calendar applications. It combines document intake (PDF text extraction and OCR for image scans), AI and rule-based entity extraction, side-by-side human-in-the-loop verification, deterministic interval conflict mathematics, and universal RFC 5545 `.ics` export.
 
 ---
 
@@ -26,9 +26,9 @@ College students and departments manage critical academic timetables through uns
 
 ---
 
-## Demonstration Dataset (PS-02 Ground Truth)
+## Sample Demonstration Dataset
 
-Notice Decoder comes pre-configured with the official PS-02 fictional demonstration dataset:
+Notice Decoder includes a clearly labeled sample circular to demonstrate the extraction and conflict detection flow:
 
 * **Notice Date**: 13 November 2026
 * **Event 1 (Exam)**: Internal Test 2 · 10:00 AM – 11:30 AM · Room 204
@@ -36,7 +36,7 @@ Notice Decoder comes pre-configured with the official PS-02 fictional demonstrat
 * **Event 3 (Deadline)**: Lab Record Submission Deadline · 12:00 noon · Department Office
 
 ### Verified Results:
-* **Hard Overlap**: Internal Test 2 overlaps with Guest Lecture from **11:00 AM to 11:30 AM** (30 minutes duration).
+* **Direct Overlap**: Internal Test 2 overlaps with Guest Lecture from **11:00 AM to 11:30 AM** (30 minutes duration).
 * **Deadline Warning**: Lab record submission at 12:00 noon lands inside the Guest Lecture block.
 * **Endpoint Independence**: The test finishes at 11:30 AM and does not falsely collide with the 12:00 noon deadline.
 
@@ -51,11 +51,11 @@ notice-decoder/
 │   ├── connection.ts          # Serverless Neon client & connection testing
 │   ├── store.ts               # Dual-mode persistence layer (Neon + Local fallback)
 │   ├── migrate.ts             # Migration runner script
-│   └── seed.ts                # PS-02 demonstration dataset seeder
+│   └── seed.ts                # Sample demonstration dataset seeder
 ├── server/
 │   └── index.ts               # Hono REST API server (Cloudflare / Node runtime)
 ├── src/
-│   ├── components/            # Reusable UI components (Navbar, Footer, Modals)
+│   ├── components/            # Reusable UI components (Navbar, Footer)
 │   ├── lib/
 │   │   ├── conflict-engine.ts # Deterministic half-open interval conflict engine
 │   │   ├── extractor.ts       # AI (Gemini 2.5) & heuristic NLP circular parser
@@ -88,7 +88,7 @@ notice-decoder/
 
 ### 2. Installation
 ```bash
-git clone https://github.com/Byte_Brains/notice-decoder.git
+git clone https://github.com/your-username/notice-decoder.git
 cd notice-decoder
 npm install
 ```
@@ -100,7 +100,7 @@ cp .env.example .env
 ```
 *(The application runs 100% locally out of the box with built-in persistent storage even without external API keys or credentials).*
 
-### 4. Run Demonstration Database Seed
+### 4. Run Sample Database Seed
 ```bash
 npm run db:seed
 ```
@@ -128,7 +128,7 @@ npm test
 ### Test Coverage Highlights:
 - **Conflict Engine**: Identical intervals, partial overlaps, complete containment, adjacent boundaries (zero false-positives), distinct dates, missing end times, overnight midnight crossings, timezone normalization, and deadline-point intersections.
 - **iCalendar**: RFC 5545 structure, special character escaping, timezone formatting, and point alarms.
-- **Extractor**: 100% extraction accuracy on PS-02 ground-truth sample.
+- **Extractor**: Extraction accuracy on standard academic circulars.
 
 ---
 
@@ -141,7 +141,6 @@ This runs strict TypeScript type checking (`tsc`) followed by Vite optimization,
 
 ---
 
-## Team & Attribution
-- **Team**: Byte_Brains
-- **Track**: PS-02 (Notice Decoder)
-- **Status**: Production-Ready MVP
+## Credits & Attribution
+- **Authors**: Byte_Brains Team
+- **Software**: Notice Decoder v1.0

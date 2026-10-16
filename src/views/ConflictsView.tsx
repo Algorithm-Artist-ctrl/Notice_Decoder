@@ -90,7 +90,7 @@ export const ConflictsView: React.FC<ConflictsViewProps> = ({
             All your confirmed timetable items have disjoint time intervals or valid non-overlapping sequences.
           </p>
           <button
-            onClick={() => onNavigate('schedule')}
+            onClick={() => onNavigate('calendar')}
             className="inline-flex items-center space-x-2 text-xs font-semibold px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition"
           >
             <span>View Calendar & Export .ics</span>

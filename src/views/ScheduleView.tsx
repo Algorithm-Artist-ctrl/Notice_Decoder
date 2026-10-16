@@ -53,7 +53,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ events, onOpenNotice
   const handleExportICS = async () => {
     try {
       setIsExporting(true);
-      const icsString = generateICalendar(events, 'Notice Decoder — Byte_Brains Schedule');
+      const icsString = generateICalendar(events, 'Notice Decoder Schedule');
       downloadICalendarFile(icsString, 'notice-decoder-schedule.ics');
     } catch (err: any) {
       alert(`Export failed: ${err.message}`);

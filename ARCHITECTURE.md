@@ -1,7 +1,7 @@
 # System Architecture & Technical Specifications
 
-**Notice Decoder**  
-**Team:** Byte_Brains · **Problem Statement:** PS-02
+**Notice Decoder** — Academic Timetable & Circular Parser Engine  
+*Architectural specifications and formal conflict arithmetic proofs.*
 
 ---
 

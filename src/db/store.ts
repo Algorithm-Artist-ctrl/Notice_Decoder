@@ -296,15 +296,15 @@ export class NoticeStore {
   }
 
   /**
-   * Seeds clearly labeled PS-02 Ground Truth Demonstration Data
+   * Seeds clearly labeled Sample Demonstration Data
    */
   static async seedDemoData(): Promise<void> {
     const demoNoticeId = 'demo-notice-ps02';
     const demoNotice: NoticeRecord = {
       id: demoNoticeId,
-      title: '[DEMO] III-Year CSE Schedule & Lab Circular (13 Nov 2026)',
+      title: '[Sample] Academic Schedule & Lab Circular (November 2026)',
       rawText: `All III-year CSE students: Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204. Lab records must be submitted to the department office by 12:00 noon on 13 Nov. A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.`,
-      fileName: 'PS02_Circular_13Nov2026_Sample.pdf',
+      fileName: 'Academic_Circular_Sample.pdf',
       fileType: 'pdf',
       fileSize: 42350,
       status: 'confirmed',

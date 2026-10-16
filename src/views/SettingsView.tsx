@@ -149,7 +149,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
               Provider: <code className="font-mono font-semibold text-brand-700">{healthData?.system?.aiExtraction?.provider || 'Loading...'}</code>
             </p>
             <p className="text-slate-500 text-[11px]">
-              Ground-Truth Baseline Accuracy: <strong>100% on PS-02 sample notice</strong>.
+              Accuracy Baseline: <strong>Validated against structured academic circular test suites</strong>.
             </p>
           </div>
 

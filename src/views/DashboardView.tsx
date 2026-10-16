@@ -61,7 +61,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <div className="flex items-center space-x-2.5">
           <button
-            onClick={() => onNavigate('upload')}
+            onClick={() => onNavigate('notices')}
             className="inline-flex items-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-medium px-4 py-2.5 rounded-xl text-xs shadow-xs transition"
           >
             <UploadCloud className="w-4 h-4 text-brand-300" />
@@ -72,10 +72,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               onClick={onLoadDemo}
               disabled={isDemoLoading}
-              className="inline-flex items-center space-x-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium px-4 py-2.5 rounded-xl text-xs transition disabled:opacity-50"
+              className="inline-flex items-center space-x-1.5 bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 font-medium px-4 py-2.5 rounded-xl text-xs transition disabled:opacity-50"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>Load PS-02 Demo</span>
+              <Sparkles className="w-3.5 h-3.5 text-brand-600" />
+              <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
             </button>
           )}
         </div>
@@ -87,13 +87,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-400">
             <FileText className="w-7 h-7" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900">No notices parsed yet</h2>
+          <h2 className="text-lg font-bold text-slate-900">No notices uploaded yet</h2>
           <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-            Upload your college timetable, exam circular, or departmental notice as a PDF or image, or load our pre-configured ground-truth circular to test the engine.
+            Upload an academic circular, timetable, or exam notice to view upcoming commitments and detect schedule conflicts, or explore our sample notice.
           </p>
           <div className="flex items-center justify-center gap-3 pt-2">
             <button
-              onClick={() => onNavigate('upload')}
+              onClick={() => onNavigate('notices')}
               className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-xl text-xs transition shadow-xs"
             >
               <UploadCloud className="w-4 h-4" />
@@ -104,8 +104,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               disabled={isDemoLoading}
               className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium px-5 py-2.5 rounded-xl text-xs transition"
             >
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span>{isDemoLoading ? 'Loading Demo...' : 'Load PS-02 Demo Notice'}</span>
+              <Sparkles className="w-4 h-4 text-brand-600" />
+              <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
             </button>
           </div>
         </div>
@@ -208,7 +208,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span>Upcoming Confirmed Events ({events.length})</span>
                 </h3>
                 <button
-                  onClick={() => onNavigate('schedule')}
+                  onClick={() => onNavigate('calendar')}
                   className="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center space-x-1"
                 >
                   <span>View Full Schedule</span>
@@ -281,8 +281,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="font-semibold text-slate-900 text-xs line-clamp-1">{n.title}</h4>
                       {n.isDemo && (
-                        <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">
-                          DEMO
+                        <span className="text-[9px] bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-200">
+                          Sample
                         </span>
                       )}
                     </div>

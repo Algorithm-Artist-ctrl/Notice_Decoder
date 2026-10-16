@@ -134,8 +134,8 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
           <div className="flex items-center space-x-2">
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Review & Verify Extracted Events</h1>
             {notice.isDemo && (
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
-                Demo Notice
+              <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                Sample Notice
               </span>
             )}
           </div>

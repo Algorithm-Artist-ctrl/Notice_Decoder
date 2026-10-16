@@ -36,9 +36,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
   // Sample Presets
   const PRESETS = [
     {
-      id: 'ps02',
-      name: 'PS-02 Baseline Circular (Ground Truth)',
-      title: 'III-Year CSE Internal Test 2 & Guest Lecture Notice',
+      id: 'academic_sample',
+      name: 'Sample Academic Circular (Test, Lecture & Deadline)',
+      title: 'Department Circular: Internal Test 2 & Guest Lecture',
       text: `All III-year CSE students: Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204. Lab records must be submitted to the department office by 12:00 noon on 13 Nov. A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.`,
     },
     {

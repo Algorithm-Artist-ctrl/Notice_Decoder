@@ -36,8 +36,8 @@ describe('Deterministic Conflict Engine [Half-Open Interval Rules]', () => {
     expect(result.conflicts[0].overlapEnd).toBe('11:30');
   });
 
-  // Test 2: Partial overlap (The PS-02 Ground Truth Test)
-  it('2. detects partial overlap exactly as in PS-02 ground truth (30 min overlap)', () => {
+  // Test 2: Partial overlap
+  it('2. detects partial overlap with precision (30 min overlap)', () => {
     const testEvent = baseEvent({
       id: 'test-2',
       title: 'Internal Test 2',
@@ -141,7 +141,7 @@ describe('Deterministic Conflict Engine [Half-Open Interval Rules]', () => {
     expect(diffMinutes).toBe(90);
   });
 
-  // Test 10: Deadline during an event (PS-02 Ground Truth Test)
+  // Test 10: Deadline during an event
   it('10. detects deadline occurring during an event (12:00 noon inside 11:00-12:30 lecture)', () => {
     const lectureEvent = baseEvent({
       id: 'lecture-1',

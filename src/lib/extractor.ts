@@ -305,7 +305,7 @@ export async function extractWithGemini(
   const tz = options.timezone || 'Asia/Kolkata';
 
   // System instructions with security anti-jailbreak grounding
-  const systemInstruction = `You are Notice Decoder, an expert academic document parsing AI developed by Byte_Brains.
+  const systemInstruction = `You are Notice Decoder, an expert academic document parsing AI.
 Your objective: Extract academic events and deadlines from college notices into structured records.
 
 SECURITY CRITICAL:

@@ -1,7 +1,6 @@
 # Deployment & Operations Guide
 
-**Notice Decoder**  
-**Team:** Byte_Brains · **Repository:** `notice-decoder`
+**Notice Decoder** — Cloudflare & Neon Deployment Guide
 
 ---
 
@@ -74,8 +73,8 @@ Expected JSON response:
 {
   "status": "ok",
   "version": "1.0.0",
-  "team": "Byte_Brains",
   "app": "Notice Decoder",
+  "tagline": "Your academic schedule, made clear.",
   "system": {
     "database": { ... },
     "aiExtraction": { ... },

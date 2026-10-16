@@ -37,16 +37,15 @@ app.get('/api/health', async (c) => {
   return c.json({
     status: 'ok',
     version: '1.0.0',
-    team: 'Byte_Brains',
     app: 'Notice Decoder',
-    tagline: 'Turn College Notices into Clear, Conflict-Free Schedules',
+    tagline: 'Your academic schedule, made clear.',
     timestamp: new Date().toISOString(),
     system: {
       database: dbStatus,
       aiExtraction: {
         provider: hasGeminiKey ? 'google_gemini_2.5_flash' : 'deterministic_heuristic_nlp',
         apiKeyConfigured: hasGeminiKey,
-        groundTruthAccuracy: '100% on PS-02 baseline circular',
+        accuracyBaseline: 'Validated on sample circular test suite',
       },
       ocr: {
         engine: 'tesseract_js',
@@ -328,7 +327,7 @@ app.get('/api/calendar/export', async (c) => {
       }, 400);
     }
 
-    const icsString = generateICalendar(events, 'Notice Decoder — Byte_Brains Schedule');
+    const icsString = generateICalendar(events, 'Notice Decoder Schedule');
 
     return c.text(icsString, 200, {
       'Content-Type': 'text/calendar; charset=utf-8',

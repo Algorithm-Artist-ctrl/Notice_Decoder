@@ -83,9 +83,9 @@ export const App: React.FC = () => {
       setActiveReviewNotice(data.data.notice);
       setActiveReviewEvents(data.data.events);
       setCurrentTab('review');
-      showToast('Loaded PS-02 Demonstration circular into Review Gate!', 'success');
+      showToast('Sample circular loaded into Review Gate!', 'success');
     } catch (err: any) {
-      showToast(`Error loading demo notice: ${err.message}`, 'error');
+      showToast(`Error loading sample notice: ${err.message}`, 'error');
     } finally {
       setIsDemoLoading(false);
     }
@@ -190,7 +190,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {currentTab === 'upload' && (
+        {currentTab === 'notices' && (
           <UploadView onUploadSuccess={handleUploadSuccess} />
         )}
 
@@ -212,7 +212,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {currentTab === 'schedule' && (
+        {currentTab === 'calendar' && (
           <ScheduleView
             events={events}
             onOpenNotice={handleOpenNotice}

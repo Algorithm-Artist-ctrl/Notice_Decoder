@@ -70,7 +70,7 @@ describe('RFC 5545 iCalendar (.ics) Generator', () => {
     const ics = generateICalendar(sampleEvents);
     expect(ics).toContain('BEGIN:VCALENDAR');
     expect(ics).toContain('VERSION:2.0');
-    expect(ics).toContain('PRODID:-//Byte_Brains//Notice Decoder v1.0//EN');
+    expect(ics).toContain('PRODID:-//Notice Decoder//Academic Schedule v1.0//EN');
     expect(ics).toContain('END:VCALENDAR');
   });
 

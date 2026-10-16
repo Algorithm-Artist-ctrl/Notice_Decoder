@@ -10,11 +10,11 @@ describe('Notice Decoder Full-Stack Integration Suite', () => {
     await NoticeStore.seedDemoData();
   });
 
-  it('persists and retrieves the PS-02 demonstration notice', async () => {
+  it('persists and retrieves the sample academic notice', async () => {
     const notice = await NoticeStore.getNoticeById('demo-notice-ps02');
     expect(notice).not.toBeNull();
     expect(notice?.id).toBe('demo-notice-ps02');
-    expect(notice?.title).toContain('III-Year CSE');
+    expect(notice?.title).toContain('Academic Schedule');
     expect(notice?.isDemo).toBe(true);
   });
 
@@ -60,7 +60,7 @@ describe('Notice Decoder Full-Stack Integration Suite', () => {
     const icsContent = generateICalendar(events);
     expect(icsContent).toContain('BEGIN:VCALENDAR');
     expect(icsContent).toContain('VERSION:2.0');
-    expect(icsContent).toContain('PRODID:-//Byte_Brains//Notice Decoder v1.0//EN');
+    expect(icsContent).toContain('PRODID:-//Notice Decoder//Academic Schedule v1.0//EN');
     expect(icsContent).toContain('SUMMARY:Internal Test 2');
     expect(icsContent).toContain('END:VCALENDAR');
   });

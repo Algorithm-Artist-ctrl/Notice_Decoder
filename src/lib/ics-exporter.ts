@@ -49,7 +49,7 @@ export function generateICalendar(events: ExtractedEvent[], calendarName = 'Noti
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Byte_Brains//Notice Decoder v1.0//EN',
+    'PRODID:-//Notice Decoder//Academic Schedule v1.0//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeICalText(calendarName)}`,
@@ -57,7 +57,7 @@ export function generateICalendar(events: ExtractedEvent[], calendarName = 'Noti
   ];
 
   for (const ev of validEvents) {
-    const uid = ev.id ? `notice-decoder-${ev.id}@bytebrains.org` : `notice-decoder-${Math.random().toString(36).substring(2)}@bytebrains.org`;
+    const uid = ev.id ? `notice-decoder-${ev.id}@noticedecoder.app` : `notice-decoder-${Math.random().toString(36).substring(2)}@noticedecoder.app`;
     const summary = escapeICalText(ev.title);
     const location = escapeICalText(ev.venue || 'Campus');
     
@@ -65,7 +65,7 @@ export function generateICalendar(events: ExtractedEvent[], calendarName = 'Noti
     if (ev.departmentOrAudience) {
       descriptionText += `\\nAudience: ${ev.departmentOrAudience}`;
     }
-    descriptionText += `\\nDecoded by Notice Decoder (Byte_Brains)`;
+    descriptionText += `\\nDecoded by Notice Decoder`;
     const description = escapeICalText(descriptionText);
 
     lines.push('BEGIN:VEVENT');

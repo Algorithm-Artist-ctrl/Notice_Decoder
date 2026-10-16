@@ -20,7 +20,7 @@ describe('Document & Notice Entity Extractor', () => {
     expect(normalizeDateString('2026-11-13').date).toBe('2026-11-13');
   });
 
-  it('extracts all 3 events with 100% accuracy from PS-02 ground-truth circular', async () => {
+  it('extracts all 3 events with 100% accuracy from standard academic circular', async () => {
     const events = await extractNoticeEvents(sampleNoticeText);
     expect(events.length).toBe(3);
 

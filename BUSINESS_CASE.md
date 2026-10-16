@@ -1,6 +1,6 @@
 # Notice Decoder — Business Case & Monetization Strategy
 
-**Team:** Byte_Brains · **Problem Statement:** PS-02
+*Monetization hypotheses, cost drivers, and product assumptions.*
 
 > **Important Disclosure**: The monetization models, tier structures, and pricing figures outlined below represent proposed business hypotheses designed for validation. They are not active commercial billing mechanisms or verified market commitments.
 

@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { 
-  Calendar, 
   UploadCloud, 
-  AlertTriangle, 
   CheckCircle2, 
   ArrowRight, 
-  FileText, 
-  ShieldCheck, 
-  Clock, 
   Sparkles, 
   Check, 
-  ExternalLink,
-  Info
+  Info,
+  Calendar,
+  AlertTriangle
 } from 'lucide-react';
 import { NavTab } from '../components/Navbar';
 
@@ -32,29 +28,28 @@ export const LandingView: React.FC<LandingViewProps> = ({
     <div className="space-y-16 pb-16">
       
       {/* 1. Hero Section */}
-      <section className="relative overflow-hidden bg-white border-b border-slate-200 pt-16 pb-20">
+      <section className="relative overflow-hidden bg-white border-b border-slate-200 pt-16 pb-20 rounded-2xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto space-y-6">
             
-            <div className="inline-flex items-center space-x-2 bg-brand-50 border border-brand-200 text-brand-800 text-xs font-semibold px-3 py-1.5 rounded-full shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
-              <span>Byte_Brains · Problem Statement PS-02</span>
+            <div className="inline-flex items-center space-x-2 bg-brand-50 border border-brand-200 text-brand-800 text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-brand-600"></span>
+              <span>Your academic schedule, made clear</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Turn College Notices into <br className="hidden sm:inline" />
-              <span className="text-brand-600">Clear, Conflict-Free Schedules.</span>
+              Turn every college notice into a <span className="text-brand-600">clear plan.</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
-              College circulars bury exam dates, lecture slots, and lab deadlines in unstructured paragraphs. 
-              Notice Decoder extracts them with full provenance, detects overlaps mathematically, and exports verified <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm text-slate-800 font-mono">.ics</code> calendars.
+            <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
+              Understand important dates, detect scheduling conflicts, and keep your academic commitments organized. 
+              Notice Decoder converts complex circulars into verified, calendar-ready events.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
               <button
-                onClick={() => onNavigate('upload')}
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-medium px-6 py-3.5 rounded-xl shadow-md transition text-sm"
+                onClick={() => onNavigate('notices')}
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-medium px-6 py-3.5 rounded-xl shadow-xs transition text-sm"
               >
                 <UploadCloud className="w-4 h-4 text-brand-300" />
                 <span>Upload a Notice</span>
@@ -64,25 +59,25 @@ export const LandingView: React.FC<LandingViewProps> = ({
               <button
                 onClick={onLoadDemo}
                 disabled={isDemoLoading}
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium px-6 py-3.5 rounded-xl transition text-sm disabled:opacity-50"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-medium px-6 py-3.5 rounded-xl transition text-sm disabled:opacity-50"
               >
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                <span>{isDemoLoading ? 'Loading Demo Notice...' : 'Try PS-02 Demo Notice'}</span>
+                <Sparkles className="w-4 h-4 text-brand-600" />
+                <span>{isDemoLoading ? 'Loading example...' : 'Explore an example'}</span>
               </button>
             </div>
 
-            <div className="flex items-center justify-center space-x-6 text-xs text-slate-500 pt-3">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500 pt-3">
               <span className="flex items-center space-x-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Zero Hallucinations</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Review extracted details</span>
               </span>
               <span className="flex items-center space-x-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Deterministic [start, end) Math</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Transparent conflict detection</span>
               </span>
               <span className="flex items-center space-x-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>100% Client Privacy</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Your schedule, organized</span>
               </span>
             </div>
 
@@ -98,15 +93,15 @@ export const LandingView: React.FC<LandingViewProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-700 bg-brand-100 px-2 py-0.5 rounded">
-                  Live Mathematical Demonstration
+                  Interactive Conflict Engine
                 </span>
-                <span className="text-xs text-slate-500 font-mono">PS-02 Baseline Circular</span>
+                <span className="text-xs text-slate-500 font-mono">Sample Timetable Demonstration</span>
               </div>
               <h2 className="text-xl font-bold text-slate-900 mt-1">
                 Where the Schedule Actually Breaks
               </h2>
               <p className="text-xs text-slate-600 mt-0.5">
-                Same morning, three events in five lines of prose. The notice never once mentions that two collide.
+                Multiple commitments buried in a continuous circular paragraph. Here is how overlaps are surfaced.
               </p>
             </div>
 
@@ -127,7 +122,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 onClick={() => setActiveInteractiveTab('raw')}
                 className={`px-3 py-1.5 rounded-md transition ${activeInteractiveTab === 'raw' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}
               >
-                Raw Notice Text
+                Sample Text
               </button>
             </div>
           </div>
@@ -135,12 +130,12 @@ export const LandingView: React.FC<LandingViewProps> = ({
           <div className="p-6">
             {activeInteractiveTab === 'raw' && (
               <div className="bg-slate-900 text-slate-100 p-5 rounded-xl font-mono text-sm leading-relaxed border border-slate-800">
-                <p className="text-brand-300 mb-2">// Fictional circular given in PS-02:</p>
+                <p className="text-brand-300 mb-2">// Sample department circular:</p>
                 <p className="text-slate-200">
                   "All III-year CSE students: <span className="bg-blue-900/60 text-blue-200 px-1 py-0.5 rounded">Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204.</span> <span className="bg-amber-900/60 text-amber-200 px-1 py-0.5 rounded">Lab records must be submitted to the department office by 12:00 noon on 13 Nov.</span> <span className="bg-purple-900/60 text-purple-200 px-1 py-0.5 rounded">A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.</span>"
                 </p>
                 <div className="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400">
-                  8 entities buried in continuous text: 3 time windows, 3 physical venues, 1 hard clash, 1 deadline warning.
+                  Notice Decoder isolates the 3 events, normalizes times, and detects the 30-minute collision and noon deadline alert.
                 </div>
               </div>
             )}
@@ -156,7 +151,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   <div className="mt-3 text-slate-400">
                     overlapStart = max(10:00, 11:00) = <span className="text-white font-bold">11:00 AM</span><br />
                     overlapEnd   = min(11:30, 12:30) = <span className="text-white font-bold">11:30 AM</span><br />
-                    overlapDuration = 11:30 - 11:00  = <span className="text-red-400 font-bold">30 MINUTES HARD OVERLAP</span>
+                    overlapDuration = 11:30 - 11:00  = <span className="text-red-400 font-bold">30 MINUTES OVERLAP</span>
                   </div>
                   <div className="mt-4 pt-3 border-t border-slate-800 text-amber-300">
                     /* Discrete Deadline-Point Rule */<br />
@@ -184,7 +179,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                     
                     {/* Event 1: Internal Test 2 (10:00 to 11:30) -> 0% to 50% */}
                     <div 
-                      className="absolute top-0 h-10 rounded-lg bg-blue-100 border border-blue-400 px-3 py-1 flex items-center justify-between text-xs shadow-xs"
+                      className="absolute top-0 h-10 rounded-lg bg-blue-100 border border-blue-400 px-3 py-1 flex items-center justify-between text-xs shadow-2xs"
                       style={{ left: '0%', width: '50%' }}
                     >
                       <div className="truncate font-semibold text-blue-900">
@@ -195,7 +190,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
                     {/* Event 2: Guest Lecture (11:00 to 12:30) -> 33.3% to 83.3% */}
                     <div 
-                      className="absolute top-12 h-10 rounded-lg bg-purple-100 border border-purple-400 px-3 py-1 flex items-center justify-between text-xs shadow-xs"
+                      className="absolute top-12 h-10 rounded-lg bg-purple-100 border border-purple-400 px-3 py-1 flex items-center justify-between text-xs shadow-2xs"
                       style={{ left: '33.33%', width: '50%' }}
                     >
                       <div className="truncate font-semibold text-purple-900">
@@ -209,7 +204,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                       className="absolute top-0 h-22 rounded border-2 border-dashed border-red-500 bg-red-500/20 pointer-events-none flex items-center justify-center"
                       style={{ left: '33.33%', width: '16.67%' }}
                     >
-                      <span className="bg-red-600 text-white text-[9px] font-bold px-1 py-0.5 rounded shadow">
+                      <span className="bg-red-600 text-white text-[9px] font-bold px-1 py-0.5 rounded shadow-xs">
                         30m Clash
                       </span>
                     </div>
@@ -219,7 +214,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                       className="absolute top-0 bottom-0 w-0.5 bg-amber-500 z-10"
                       style={{ left: '66.66%' }}
                     >
-                      <div className="absolute -top-3 -left-16 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
+                      <div className="absolute -top-3 -left-16 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
                         📍 Lab Deadline 12:00
                       </div>
                     </div>
@@ -228,7 +223,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-6 border-t border-slate-200 text-xs">
                     <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                      <span className="font-bold text-red-900 block mb-0.5">⚠️ Hard Overlap (30 Min)</span>
+                      <span className="font-bold text-red-900 block mb-0.5">⚠️ Direct Overlap (30 Min)</span>
                       <p className="text-red-700">Internal Test 2 and Guest Lecture collide from 11:00 to 11:30 AM.</p>
                     </div>
                     <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
@@ -249,14 +244,14 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
           <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-between">
             <span className="text-xs text-slate-500">
-              Deterministic Interval Math: <span className="font-mono text-slate-700 font-semibold">[10:00, 11:30) ∩ [11:00, 12:30)</span>
+              Deterministic Interval Calculation: <span className="font-mono text-slate-700 font-semibold">[10:00, 11:30) ∩ [11:00, 12:30)</span>
             </span>
             <button
               onClick={onLoadDemo}
               disabled={isDemoLoading}
               className="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center space-x-1"
             >
-              <span>Explore Full Demo Dataset</span>
+              <span>Explore Example in Decoder</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -271,23 +266,23 @@ export const LandingView: React.FC<LandingViewProps> = ({
             One Notice In. One Verified Calendar Out.
           </h2>
           <p className="text-sm text-slate-600 mt-2">
-            AI assists with entity extraction, but nothing ever reaches your calendar without human review.
+            AI assists with entity extraction, but you confirm every detail before anything reaches your calendar.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3 relative">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3 relative">
             <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-800 font-mono font-bold text-sm flex items-center justify-center">
               01
             </div>
             <h3 className="font-bold text-slate-900 text-sm">Intake & OCR</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Accepts digital PDFs, phone camera photos, or pasted WhatsApp circulars up to 10 MB.
+              Accepts digital PDFs, phone camera photos, or pasted circular text up to 10 MB.
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3 relative">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3 relative">
             <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-800 font-mono font-bold text-sm flex items-center justify-center">
               02
             </div>
@@ -297,17 +292,17 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border-2 border-brand-500 shadow-xs space-y-3 relative">
+          <div className="bg-white p-5 rounded-xl border-2 border-brand-500 shadow-2xs space-y-3 relative">
             <div className="w-8 h-8 rounded-lg bg-brand-100 text-brand-800 font-mono font-bold text-sm flex items-center justify-center">
               03
             </div>
             <h3 className="font-bold text-slate-900 text-sm">Review Gate</h3>
             <p className="text-xs text-slate-500 leading-relaxed font-medium text-brand-900">
-              Side-by-side editor. Flagged fields highlight ambiguities for instant correction.
+              Side-by-side editor. Flagged fields highlight ambiguities for instant user correction.
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3 relative">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3 relative">
             <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 font-mono font-bold text-sm flex items-center justify-center">
               04
             </div>
@@ -317,7 +312,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3 relative">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-3 relative">
             <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 font-mono font-bold text-sm flex items-center justify-center">
               05
             </div>
@@ -336,7 +331,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
           <div className="max-w-2xl mb-8">
             <h2 className="text-2xl font-bold tracking-tight">Why Manual Notice Sorting Fails</h2>
             <p className="text-sm text-slate-300 mt-1">
-              Comparing prose across three circulars requires mental arithmetic that breaks under exam pressure.
+              Comparing prose across multiple circulars requires mental arithmetic that is easy to get wrong during busy exam weeks.
             </p>
           </div>
 
@@ -352,8 +347,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
               <tbody className="divide-y divide-navy-800 text-slate-200">
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-white">Finding Events</td>
-                  <td className="py-3.5 px-4 text-slate-300">Re-read paragraph, underline dates with pen</td>
-                  <td className="py-3.5 px-4 text-emerald-300 font-semibold">Extracted structured fields in 1 pass</td>
+                  <td className="py-3.5 px-4 text-slate-300">Re-read paragraph, manually note dates</td>
+                  <td className="py-3.5 px-4 text-emerald-300 font-semibold">Extracted structured fields in one pass</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-white">Comparing Times</td>
@@ -372,7 +367,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-white">Calendar Entry</td>
-                  <td className="py-3.5 px-4 text-slate-300">Type every field into Google Calendar manually</td>
+                  <td className="py-3.5 px-4 text-slate-300">Type every field into calendar manually</td>
                   <td className="py-3.5 px-4 text-emerald-300 font-semibold">Single-click standard RFC 5545 .ics download</td>
                 </tr>
               </tbody>
@@ -397,35 +392,35 @@ export const LandingView: React.FC<LandingViewProps> = ({
               <ul className="space-y-2">
                 <li className="flex items-start space-x-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Deterministic Conflict Arithmetic:</strong> Overlaps are strictly calculated with interval math. No LLM hallucinations in clash detection.</span>
+                  <span><strong>Deterministic Conflict Arithmetic:</strong> Overlaps are strictly calculated with interval math. No model guesswork in clash detection.</span>
                 </li>
                 <li className="flex items-start space-x-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Zero Data Fabrications:</strong> All demo data is strictly labeled. Unconfirmed records are never pushed into schedules.</span>
+                  <span><strong>Evidence Verification:</strong> Every proposed event links to source text. Unconfirmed records are never pushed into schedules.</span>
                 </li>
                 <li className="flex items-start space-x-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>RFC 5545 Compliance:</strong> .ics files are tested for standard timezones and escaping.</span>
+                  <span><strong>RFC 5545 Compliance:</strong> .ics files are formatted to standard timezone and escaping specifications.</span>
                 </li>
               </ul>
             </div>
 
             <div className="space-y-3">
               <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] text-amber-700">
-                Current Limitations & Human Review Required
+                Human Review Gate & Boundaries
               </h4>
               <ul className="space-y-2">
                 <li className="flex items-start space-x-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span><strong>Ambiguous Date Expressions:</strong> Expressions like "next Monday" or "within 7 days" are flagged for user confirmation.</span>
+                  <span><strong>Ambiguous Date Expressions:</strong> Phrases like "next Monday" or "within 7 days" are flagged for user confirmation.</span>
                 </li>
                 <li className="flex items-start space-x-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span><strong>Degraded Physical Scans:</strong> Low-resolution camera photos of dirty bulletin boards may require manual correction.</span>
+                  <span><strong>Degraded Physical Scans:</strong> Low-resolution camera photos of physical boards may require user review.</span>
                 </li>
                 <li className="flex items-start space-x-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span><strong>Unspecified Durations:</strong> If a circular lists only a start time, duration is never silently assumed.</span>
+                  <span><strong>Unspecified Durations:</strong> If a circular lists only a start time, duration is flagged rather than guessed.</span>
                 </li>
               </ul>
             </div>
@@ -433,23 +428,23 @@ export const LandingView: React.FC<LandingViewProps> = ({
         </div>
       </section>
 
-      {/* 6. Proposed Monetization & Business Assumptions */}
+      {/* 6. Proposed Pricing Model */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-10">
           <div className="inline-block bg-slate-100 text-slate-700 text-[11px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-slate-200 mb-2">
-            Proposed Business Model (Hypothesis for Validation)
+            Pricing Plans (Proposal)
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            Sustainable Commercial Roadmap
+            Simple, Transparent Pricing
           </h2>
           <p className="text-xs text-slate-500 mt-2">
-            The pricing tiers below represent proposed business hypotheses. They are not active payment gateways or validated commercial facts.
+            Proposed subscription tiers for students, class coordinators, and academic institutions.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-4">
             <h4 className="font-bold text-slate-900 text-sm">Free Student</h4>
             <div className="text-2xl font-extrabold text-slate-900">₹0 <span className="text-xs font-normal text-slate-500">/ forever</span></div>
             <p className="text-xs text-slate-500">Essential schedule decoding for individual university students.</p>
@@ -461,25 +456,25 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </ul>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border-2 border-brand-500 shadow-md space-y-4 relative">
+          <div className="bg-white p-6 rounded-xl border-2 border-brand-500 shadow-xs space-y-4 relative">
             <div className="absolute -top-3 right-4 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Proposed Pro
+              Most Popular
             </div>
             <h4 className="font-bold text-slate-900 text-sm">Student Pro</h4>
             <div className="text-2xl font-extrabold text-slate-900">₹99 <span className="text-xs font-normal text-slate-500">/ sem</span></div>
-            <p className="text-xs text-slate-500">For Class Representatives and heavily involved student coordinators.</p>
+            <p className="text-xs text-slate-500">For class coordinators and active student leaders.</p>
             <ul className="text-xs space-y-2 text-slate-600 pt-2 border-t border-slate-100">
               <li>✓ Unlimited notice decoding</li>
               <li>✓ Full OCR for camera scans</li>
               <li>✓ Batch circular upload</li>
-              <li>✓ Conflict mitigation advice</li>
+              <li>✓ Conflict mitigation suggestions</li>
             </ul>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-4">
             <h4 className="font-bold text-slate-900 text-sm">Department Pilot</h4>
             <div className="text-2xl font-extrabold text-slate-900">₹4,999 <span className="text-xs font-normal text-slate-500">/ sem</span></div>
-            <p className="text-xs text-slate-500">For academic department coordinators releasing circulars.</p>
+            <p className="text-xs text-slate-500">For academic department coordinators preparing circulars.</p>
             <ul className="text-xs space-y-2 text-slate-600 pt-2 border-t border-slate-100">
               <li>✓ Pre-release conflict check</li>
               <li>✓ Automated circular drafting</li>
@@ -488,15 +483,15 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </ul>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-4">
             <h4 className="font-bold text-slate-900 text-sm">Institutional</h4>
             <div className="text-2xl font-extrabold text-slate-900">Custom <span className="text-xs font-normal text-slate-500">/ campus</span></div>
-            <p className="text-xs text-slate-500">Campus-wide deployment integrated with ERP and LMS.</p>
+            <p className="text-xs text-slate-500">Campus-wide deployment integrated with ERP and LMS systems.</p>
             <ul className="text-xs space-y-2 text-slate-600 pt-2 border-t border-slate-100">
-              <li>✓ SSO / Campus portal sync</li>
+              <li>✓ Campus portal sync</li>
               <li>✓ Multi-department auditing</li>
-              <li>✓ Dedicated Neon Postgres DB</li>
-              <li>✓ SLA & priority support</li>
+              <li>✓ Dedicated database instance</li>
+              <li>✓ Priority support & SLA</li>
             </ul>
           </div>
 
