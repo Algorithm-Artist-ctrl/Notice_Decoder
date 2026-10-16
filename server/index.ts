@@ -1,6 +1,9 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { cors } from 'hono/cors';
+import fs from 'fs';
+import path from 'path';
 import { testNeonConnection, getDatabaseStatus } from '../src/db/connection';
 import { NoticeStore } from '../src/db/store';
 import { extractNoticeEvents } from '../src/lib/extractor';
@@ -353,10 +356,32 @@ app.post('/api/demo/seed', async (c) => {
   });
 });
 
+// Serve static client assets from dist/ if built (for production deployment)
+const distDir = path.resolve(process.cwd(), 'dist');
+if (fs.existsSync(distDir)) {
+  app.use('/*', serveStatic({ root: './dist' }));
+
+  // SPA fallback for client-side navigation
+  app.get('*', (c) => {
+    if (c.req.path.startsWith('/api')) {
+      return c.json({ success: false, error: 'API endpoint not found' }, 404);
+    }
+    const htmlFile = path.join(distDir, 'index.html');
+    if (fs.existsSync(htmlFile)) {
+      const html = fs.readFileSync(htmlFile, 'utf-8');
+      return c.html(html);
+    }
+    return c.text('Notice Decoder build not found. Run npm run build.', 404);
+  });
+}
+
 const PORT = parseInt(process.env.PORT || '3000', 10);
-console.log(`📡 Notice Decoder API Server starting on port ${PORT}...`);
+const HOST = '0.0.0.0';
+console.log(`📡 Notice Decoder Server listening on http://${HOST}:${PORT}...`);
 
 serve({
   fetch: app.fetch,
   port: PORT,
+  hostname: HOST,
 });
+
