@@ -10,7 +10,7 @@ export type DocumentDomain =
   | 'legal' 
   | 'general';
 
-export type AnalysisCase = 'A' | 'B' | 'C' | 'D' | 'E';
+export type AnalysisCase = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 
 export type DocumentType = 
   | 'academic_schedule' 

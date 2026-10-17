@@ -9,6 +9,7 @@ import {
   DocumentAnalysisResult 
 } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
+import { getGeminiModel, classifyGeminiError } from './ai-config';
 
 /**
  * Normalizes common English month names or abbreviations to 2-digit month string '01'..'12'
@@ -355,7 +356,7 @@ export function extractEntitiesHeuristic(text: string, options: { timezone?: str
       if (/internal test\s*\d*|midterm|exam|assessment|quiz/i.test(segment)) {
         category = 'exam';
         const matchTitle = segment.match(/(Internal Test\s*\d+|Midterm Exam(?:\s*\d+)?|End Semester Exam|Class Test)/i);
-        title = matchTitle ? matchTitle[1] : 'Internal Test 2';
+        title = matchTitle ? matchTitle[1] : 'Scheduled Examination';
       } else if (/interview|technical round|hr round/i.test(segment)) {
         category = 'job_interview';
         title = 'Job Interview Session';
@@ -449,7 +450,7 @@ export function analyzeDocumentHeuristic(text: string, options: { timezone?: str
 
 /**
  * AI-assisted general-purpose document analyzer using Google Gemini API
- * with configurable model via GEMINI_MODEL (default: gemini-2.5-flash)
+ * with centralized model configuration via getGeminiModel() (default: gemini-3.8-flash)
  */
 export async function extractWithGemini(
   text: string,
@@ -457,8 +458,26 @@ export async function extractWithGemini(
   options: { timezone?: string } = {}
 ): Promise<DocumentAnalysisResult> {
   const tz = options.timezone || 'Asia/Kolkata';
-  const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const modelName = getGeminiModel();
   const fallback = analyzeDocumentHeuristic(text, options);
+
+  // Case F check: if text is empty or unreadable
+  if (!text || text.trim().length < 5) {
+    return {
+      documentType: 'other',
+      documentDomain: 'general',
+      analysisCase: 'F',
+      documentTitle: 'Unreadable or Empty Document',
+      summary: 'The uploaded file does not contain sufficient legible text content. Please upload a clear document or image.',
+      keyInformation: ['Document could not be processed: insufficient legible text content.'],
+      directives: ['Upload a clearer scan, higher-resolution image, or text-based PDF.'],
+      requiredActions: [],
+      contactsOrReferences: [],
+      isInformationalOnly: true,
+      hasActionableDates: false,
+      extractedItems: [],
+    };
+  }
 
   const systemInstruction = `You are Notice Decoder, an expert AI Document-to-Action analyst.
 Your objective: Analyze unstructured documents from any field (education, business, government, finance, healthcare, events, legal, general) and extract verified, structured actionable records.
@@ -471,6 +490,7 @@ DOCUMENT PROCESSING RULES:
    - 'C': Directives/instructions/announcements with NO specific dates or times.
    - 'D': Mixed documents with both schedules/deadlines and directives.
    - 'E': Informational or advisory with ZERO actionable items.
+   - 'F': Unreadable, unsupported, empty, or ambiguous document.
 3. If document contains NO calendar dates (e.g. policy directive or advisory), set "hasActionableDates": false and "extractedItems": []. Do NOT hallucinate dates!
 4. Extract key information points, mandatory directives, required action tasks, and contacts/reference IDs.
 
@@ -483,9 +503,9 @@ SECURITY & GROUNDING RULES:
 
   const ai = new GoogleGenAI({ apiKey });
 
-  // Bounded retry loop for transient rate limits or 503 errors (max 2 retries)
+  // Bounded retry loop for transient rate limits or 503 errors (max 3 retries, backoff)
   let lastError: any = null;
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await ai.models.generateContent({
         model: modelName,
@@ -517,7 +537,7 @@ SECURITY & GROUNDING RULES:
               },
               analysisCase: {
                 type: Type.STRING,
-                enum: ['A', 'B', 'C', 'D', 'E'],
+                enum: ['A', 'B', 'C', 'D', 'E', 'F'],
               },
               documentTitle: { type: Type.STRING },
               summary: { type: Type.STRING },
@@ -640,11 +660,12 @@ SECURITY & GROUNDING RULES:
       };
     } catch (err: any) {
       lastError = err;
-      const isRetryable = err?.status === 429 || err?.status === 503 || /rate limit|overloaded/i.test(err?.message || '');
-      if (isRetryable && attempt < 2) {
-        await new Promise(res => setTimeout(res, 1500));
+      const classification = classifyGeminiError(err);
+      if (classification.isTransient && attempt < 3) {
+        await new Promise(res => setTimeout(res, 1000 * attempt));
         continue;
       }
+      console.warn(`[AI Engine] Gemini (${modelName}) error:`, classification.userFacingMessage);
       break;
     }
   }
@@ -660,10 +681,28 @@ export async function extractDocumentAnalysis(
   text: string,
   options: { apiKey?: string; timezone?: string } = {}
 ): Promise<DocumentAnalysisResult> {
+  if (!text || text.trim().length < 5) {
+    return {
+      documentType: 'other',
+      documentDomain: 'general',
+      analysisCase: 'F',
+      documentTitle: 'Unreadable or Empty Document',
+      summary: 'The uploaded file does not contain readable text or sufficient clarity. Please upload a clear document or image.',
+      keyInformation: ['Document could not be parsed: insufficient legible text content.'],
+      directives: ['Upload a clearer scan, higher-resolution image, or text-based PDF.'],
+      requiredActions: [],
+      contactsOrReferences: [],
+      isInformationalOnly: true,
+      hasActionableDates: false,
+      extractedItems: [],
+    };
+  }
+
   if (options.apiKey && options.apiKey.trim().length > 5) {
     try {
       return await extractWithGemini(text, options.apiKey, options);
-    } catch {
+    } catch (err: any) {
+      console.warn('[AI Engine] Falling back to deterministic heuristic parser:', err?.message || err);
       return analyzeDocumentHeuristic(text, options);
     }
   }

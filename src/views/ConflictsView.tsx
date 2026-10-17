@@ -68,7 +68,7 @@ export const ConflictsView: React.FC<ConflictsViewProps> = ({
             onClick={() => setFilter('hard_overlap')}
             className={`px-3 py-1.5 rounded-lg transition ${filter === 'hard_overlap' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600'}`}
           >
-            Hard Overlaps ({hardOverlapsCount})
+            Schedule Overlaps ({hardOverlapsCount})
           </button>
           <button
             onClick={() => setFilter('deadline')}
@@ -87,7 +87,7 @@ export const ConflictsView: React.FC<ConflictsViewProps> = ({
           </div>
           <h2 className="text-lg font-bold text-slate-900">Zero Schedule Conflicts Detected</h2>
           <p className="text-xs text-slate-500 leading-relaxed">
-            All your confirmed timetable items have disjoint time intervals or valid non-overlapping sequences.
+            All your confirmed schedule items have disjoint time intervals or valid non-overlapping sequences.
           </p>
           <button
             onClick={() => onNavigate('calendar')}
@@ -130,7 +130,7 @@ export const ConflictsView: React.FC<ConflictsViewProps> = ({
                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                           isHardOverlap ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                         }`}>
-                          {isHardOverlap ? 'Simultaneous Event Overlap' : 'Point Deadline Inside Event'}
+                          {isHardOverlap ? 'Schedule Overlap' : 'Deadline During Event'}
                         </span>
                         <span className="text-xs font-mono font-bold text-slate-700">
                           {c.eventA.date}
@@ -234,7 +234,7 @@ export const ConflictsView: React.FC<ConflictsViewProps> = ({
                 <div className="bg-blue-50 border border-blue-200 p-3.5 rounded-xl text-xs flex items-start space-x-2">
                   <HelpCircle className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-blue-950">Suggested Student Action: </span>
+                    <span className="font-bold text-blue-950">Suggested Action: </span>
                     <span className="text-blue-900">{c.suggestedAction}</span>
                   </div>
                 </div>

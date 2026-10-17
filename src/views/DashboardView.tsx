@@ -88,20 +88,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-xs text-slate-400">Welcome to Notice Decoder</span>
               </div>
               <h2 className="text-xl font-bold tracking-tight text-white">
-                Three steps to a conflict-free academic schedule:
+                Three steps to transform documents into clear action:
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 text-xs">
                 <div className="bg-white/10 rounded-xl p-3 border border-white/10 space-y-1">
-                  <div className="font-bold text-brand-300">1. Upload Notice</div>
-                  <p className="text-slate-300 text-[11px]">Upload circulars, exam datesheets, or pasted portal text.</p>
+                  <div className="font-bold text-brand-300">1. Upload Any Document</div>
+                  <p className="text-slate-300 text-[11px]">Upload PDFs, images, circulars, memos, or pasted text.</p>
                 </div>
                 <div className="bg-white/10 rounded-xl p-3 border border-white/10 space-y-1">
                   <div className="font-bold text-brand-300">2. Review Gate</div>
-                  <p className="text-slate-300 text-[11px]">Verify extracted events against original document evidence.</p>
+                  <p className="text-slate-300 text-[11px]">Verify extracted events, tasks, and summaries against source evidence.</p>
                 </div>
                 <div className="bg-white/10 rounded-xl p-3 border border-white/10 space-y-1">
-                  <div className="font-bold text-brand-300">3. Spot Conflicts & Export</div>
-                  <p className="text-slate-300 text-[11px]">Surfaces overlapping exams & exports .ics calendars.</p>
+                  <div className="font-bold text-brand-300">3. Detect Conflicts & Export</div>
+                  <p className="text-slate-300 text-[11px]">Surfaces overlapping commitments & exports .ics calendars.</p>
                 </div>
               </div>
             </div>
@@ -225,7 +225,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div className="flex items-center space-x-2">
                   <AlertCircle className="w-5 h-5 text-red-600" />
                   <h3 className="font-bold text-red-950 text-sm">
-                    {conflicts.length} Actionable Schedule Conflicts Detected
+                    {hardOverlaps.length > 0 && deadlineWarnings.length > 0
+                      ? `${hardOverlaps.length} Schedule Overlap${hardOverlaps.length > 1 ? 's' : ''} & ${deadlineWarnings.length} Deadline Alert${deadlineWarnings.length > 1 ? 's' : ''} Detected`
+                      : hardOverlaps.length > 0
+                      ? `${hardOverlaps.length} Schedule Overlap${hardOverlaps.length > 1 ? 's' : ''} Detected`
+                      : `${deadlineWarnings.length} Deadline Alert${deadlineWarnings.length > 1 ? 's' : ''} Detected`}
                   </h3>
                 </div>
                 <button

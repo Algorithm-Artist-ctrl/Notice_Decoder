@@ -53,22 +53,25 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           {/* Brand Logo & Product Identity */}
           <div 
-            className="flex items-center space-x-3 cursor-pointer group" 
+            className="flex items-center space-x-3 cursor-pointer group shrink-0 min-w-0" 
             onClick={() => onSelectTab('landing')}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectTab('landing'); }}
             aria-label="Notice Decoder Home"
           >
-            <div className="w-9 h-9 rounded-xl bg-navy-900 flex items-center justify-center text-white shadow-xs border border-navy-800 transition group-hover:bg-brand-700">
-              <CalendarIcon className="w-4.5 h-4.5 text-brand-300" />
+            <div className="w-10 h-10 rounded-xl bg-navy-900 flex items-center justify-center text-white shadow-xs border border-navy-800 transition group-hover:bg-brand-700 shrink-0">
+              <CalendarIcon className="w-5 h-5 text-brand-300" />
             </div>
-            <div>
-              <span className="font-bold text-slate-900 tracking-tight text-base sm:text-lg block leading-tight">
+            <div className="min-w-0">
+              <span className="font-extrabold text-slate-900 tracking-tight text-base sm:text-lg block leading-tight whitespace-nowrap">
                 Notice Decoder
               </span>
-              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
+              <p className="text-[11px] text-slate-500 font-medium hidden xl:block leading-tight whitespace-nowrap">
                 Turn Any Document into Clear, Actionable Information.
+              </p>
+              <p className="text-[11px] text-slate-500 font-medium hidden sm:block xl:hidden leading-tight truncate max-w-[200px]">
+                Turn Any Document into Action.
               </p>
             </div>
           </div>

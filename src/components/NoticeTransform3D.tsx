@@ -288,15 +288,15 @@ export const NoticeTransform3D: React.FC<NoticeTransform3DProps> = ({ className 
           <div className="space-y-2">
             <div className="w-36 bg-navy-900 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-brand-400" />
-              <span>Internal Test 2</span>
+              <span>Priority Event</span>
             </div>
             <div className="w-36 bg-blue-600 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
               <Calendar className="w-3.5 h-3.5 text-blue-200" />
-              <span>Guest Lecture</span>
+              <span>Session / Talk</span>
             </div>
             <div className="w-36 bg-emerald-600 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
               <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
-              <span>Lab Record Noon</span>
+              <span>Action Deadline</span>
             </div>
           </div>
         </div>

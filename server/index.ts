@@ -19,6 +19,7 @@ try {
 import { testNeonConnection, getDatabaseStatus } from '../src/db/connection';
 import { NoticeStore } from '../src/db/store';
 import { extractNoticeEvents, extractDocumentAnalysis } from '../src/lib/extractor';
+import { getGeminiModel } from '../src/lib/ai-config';
 import { generateICalendar } from '../src/lib/ics-exporter';
 import { NoticeRecord, ExtractedEvent } from '../src/types';
 import { uploadToNeonStorage, invokeNeonHelloFunction, getNeonServicesDiagnostics } from '../src/lib/neon-services';
@@ -103,7 +104,8 @@ app.get('/api/health', async (c) => {
         database: dbStatus,
         neon: neonDiagnostics,
         aiExtraction: {
-          provider: hasGeminiKey ? 'google_gemini_2.5_flash' : 'deterministic_heuristic_nlp',
+          provider: hasGeminiKey ? `google_${getGeminiModel()}` : 'deterministic_heuristic_nlp',
+          model: getGeminiModel(),
           apiKeyConfigured: hasGeminiKey,
           accuracyBaseline: 'Validated on sample circular test suite',
         },
@@ -555,7 +557,7 @@ app.post('/api/notices/upload', async (c) => {
     }
 
     const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 5);
-    const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const modelName = getGeminiModel();
     const extractionMethod = hasGeminiKey ? `google_${modelName}` : 'deterministic_heuristic_nlp';
 
     return c.json({

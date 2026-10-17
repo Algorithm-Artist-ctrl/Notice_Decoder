@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UploadCloud, 
@@ -28,8 +28,6 @@ interface LandingViewProps {
 export const LandingView: React.FC<LandingViewProps> = ({
   onNavigate,
 }) => {
-  const [activeInteractiveTab, setActiveInteractiveTab] = useState<'visual' | 'code' | 'raw'>('visual');
-
   return (
     <div className="space-y-20 pb-20">
       
@@ -114,174 +112,144 @@ export const LandingView: React.FC<LandingViewProps> = ({
         </div>
       </section>
 
-      {/* 2. Interactive Conflict Demonstration — Drawn to Scale */}
+      {/* 2. General-Purpose 5-Step Document-to-Action Workflow */}
       <section className="max-w-7xl mx-auto">
-        <div className="bg-white border border-slate-200 rounded-3xl shadow-xs overflow-hidden">
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-xs space-y-8">
           
-          <div className="border-b border-slate-200 px-6 sm:px-8 py-6 bg-slate-50/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 bg-brand-100 px-2.5 py-0.5 rounded-full">
-                  Interactive Conflict Engine
-                </span>
-                <span className="text-xs text-slate-500 font-mono">Sample Schedule Demonstration</span>
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-slate-100 pb-8">
+            <div className="space-y-3 max-w-2xl text-left">
+              <div className="inline-flex items-center space-x-2 bg-brand-50 border border-brand-200 text-brand-800 text-xs font-semibold px-3 py-1 rounded-full">
+                <Sparkles className="w-3.5 h-3.5 text-brand-600" />
+                <span>AI-Powered Document Understanding</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">
-                Where Academic Schedules Actually Break
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+                Turn Any Document into Clear, Actionable Information.
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                Multiple commitments buried in continuous circular text. Notice Decoder isolates each event and surfaces hidden collisions.
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+                Extract important information, summarize key points, identify tasks and deadlines, and detect scheduling conflicts when dates or events are present.
               </p>
             </div>
 
-            <div className="flex items-center bg-slate-200/80 p-1 rounded-xl text-xs font-semibold self-start md:self-auto">
+            <div className="shrink-0">
               <button
-                onClick={() => setActiveInteractiveTab('visual')}
-                className={`px-3.5 py-1.5 rounded-lg transition ${activeInteractiveTab === 'visual' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                onClick={() => onNavigate('notices')}
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-semibold px-6 py-3.5 rounded-xl shadow-xs hover:shadow transition text-sm group"
               >
-                Visual Scale
-              </button>
-              <button
-                onClick={() => setActiveInteractiveTab('code')}
-                className={`px-3.5 py-1.5 rounded-lg transition ${activeInteractiveTab === 'code' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-              >
-                Math Proof
-              </button>
-              <button
-                onClick={() => setActiveInteractiveTab('raw')}
-                className={`px-3.5 py-1.5 rounded-lg transition ${activeInteractiveTab === 'raw' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-              >
-                Raw Circular
+                <UploadCloud className="w-4 h-4 text-brand-300 transition-transform group-hover:-translate-y-0.5" />
+                <span>Upload a Document</span>
+                <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-0.5" />
               </button>
             </div>
           </div>
 
-          <div className="p-6 sm:p-8">
-            {activeInteractiveTab === 'raw' && (
-              <div className="bg-slate-900 text-slate-100 p-6 rounded-2xl font-mono text-sm leading-relaxed border border-slate-800 space-y-3">
-                <p className="text-brand-300 text-xs font-bold uppercase tracking-wider">// Sample College Circular Text:</p>
-                <p className="text-slate-200">
-                  "All III-year CSE students: <span className="bg-blue-900/60 text-blue-200 px-1.5 py-0.5 rounded">Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204.</span> <span className="bg-amber-900/60 text-amber-200 px-1.5 py-0.5 rounded">Lab records must be submitted to the department office by 12:00 noon on 13 Nov.</span> <span className="bg-purple-900/60 text-purple-200 px-1.5 py-0.5 rounded">A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.</span>"
+          {/* 5-Step Process Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            
+            {/* Step 1 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3 relative flex flex-col justify-between hover:border-slate-300 transition">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-lg bg-navy-900 text-white font-mono font-bold text-xs flex items-center justify-center">
+                    01
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded">
+                    Input
+                  </span>
+                </div>
+                <h3 className="font-bold text-slate-900 text-sm">Upload Any File</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  PDF documents, photos of physical memos, or pasted announcement text up to 10 MB.
                 </p>
-                <div className="pt-3 border-t border-slate-800 text-xs text-slate-400">
-                  Notice Decoder extracts the 3 distinct events, calculates start/end bounds, and identifies the 30-minute test/lecture collision and the noon submission deadline warning.
-                </div>
               </div>
-            )}
-
-            {activeInteractiveTab === 'code' && (
-              <div className="space-y-4">
-                <div className="bg-slate-900 text-slate-100 p-6 rounded-2xl font-mono text-xs leading-relaxed space-y-3">
-                  <div className="text-emerald-400 font-bold uppercase tracking-wider">/* Deterministic Interval Overlap Theorem */</div>
-                  <div className="text-slate-300">
-                    Two valid timed intervals [startA, endA) and [startB, endB) overlap if and only if:<br />
-                    <span className="text-brand-400 font-bold">startA &lt; endB &amp;&amp; startB &lt; endA</span>
-                  </div>
-                  <div className="text-slate-400 pl-3 border-l-2 border-slate-700 space-y-1">
-                    <div>overlapStart = max(10:00, 11:00) = <span className="text-white font-bold">11:00 AM</span></div>
-                    <div>overlapEnd   = min(11:30, 12:30) = <span className="text-white font-bold">11:30 AM</span></div>
-                    <div>overlapDuration = 11:30 - 11:00  = <span className="text-red-400 font-bold">30 MINUTES SIMULTANEOUS CLASH</span></div>
-                  </div>
-                  <div className="pt-3 border-t border-slate-800 text-amber-300 space-y-1">
-                    <div className="font-bold">/* Discrete Deadline-Point Rule */</div>
-                    <div>A point deadline D occurs during event E if: <span className="text-white font-bold">E.start &lt;= D &lt; E.end</span></div>
-                    <div className="text-amber-400 font-bold">11:00 &lt;= 12:00 (Noon) &lt; 12:30 ===&gt; DEADLINE DURING EVENT ALERT</div>
-                  </div>
-                </div>
+              <div className="pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 font-medium">
+                Text layer & OCR ready
               </div>
-            )}
+            </div>
 
-            {activeInteractiveTab === 'visual' && (
-              <div className="space-y-6">
-                
-                {/* Visual Scale Diagram */}
-                <div className="relative border border-slate-200 rounded-2xl p-6 bg-gradient-to-b from-white to-slate-50">
-                  <div className="flex justify-between text-xs font-mono font-semibold text-slate-500 mb-8 border-b border-slate-200 pb-2">
-                    <span>10:00 AM</span>
-                    <span>11:00 AM</span>
-                    <span>12:00 PM (Noon)</span>
-                    <span>01:00 PM</span>
-                  </div>
-
-                  {/* Event Blocks Bar */}
-                  <div className="relative h-28 space-y-2">
-                    
-                    {/* Event 1: Internal Test 2 (10:00 to 11:30) -> 0% to 50% */}
-                    <div 
-                      className="absolute top-0 h-10 rounded-xl bg-blue-100 border border-blue-400 px-3.5 py-1 flex items-center justify-between text-xs shadow-2xs"
-                      style={{ left: '0%', width: '50%' }}
-                    >
-                      <div className="truncate font-semibold text-blue-900">
-                        Internal Test 2 <span className="text-blue-700 font-normal">· Rm 204</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-blue-800 font-semibold">10:00–11:30</span>
-                    </div>
-
-                    {/* Event 2: Guest Lecture (11:00 to 12:30) -> 33.3% to 83.3% */}
-                    <div 
-                      className="absolute top-12 h-10 rounded-xl bg-purple-100 border border-purple-400 px-3.5 py-1 flex items-center justify-between text-xs shadow-2xs"
-                      style={{ left: '33.33%', width: '50%' }}
-                    >
-                      <div className="truncate font-semibold text-purple-900">
-                        Guest Lecture: AI in Healthcare <span className="text-purple-700 font-normal">· Sem Hall</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-purple-800 font-semibold">11:00–12:30</span>
-                    </div>
-
-                    {/* Overlap Strip: 11:00 to 11:30 -> 33.33% to 50% */}
-                    <div 
-                      className="absolute top-0 h-22 rounded-xl border-2 border-dashed border-red-500 bg-red-500/20 pointer-events-none flex items-center justify-center"
-                      style={{ left: '33.33%', width: '16.67%' }}
-                    >
-                      <span className="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
-                        30m Clash
-                      </span>
-                    </div>
-
-                    {/* Deadline Point: 12:00 noon -> at 66.66% */}
-                    <div 
-                      className="absolute top-0 bottom-0 w-0.5 bg-amber-500 z-10"
-                      style={{ left: '66.66%' }}
-                    >
-                      <div className="absolute -top-3.5 -left-16 bg-amber-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
-                        📍 Lab Due 12:00
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-6 border-t border-slate-200 text-xs">
-                    <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 space-y-1">
-                      <span className="font-bold text-red-950 block">⚠️ Direct Overlap (30 Min)</span>
-                      <p className="text-red-800">Internal Test 2 and Guest Lecture collide between 11:00 AM and 11:30 AM.</p>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
-                      <span className="font-bold text-amber-950 block">⏱️ Deadline Alert</span>
-                      <p className="text-amber-800">12:00 noon lab submission occurs while seated in the Guest Lecture.</p>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
-                      <span className="font-bold text-emerald-950 block">✅ Endpoint Independence</span>
-                      <p className="text-emerald-800">Test ends at 11:30 AM; does not falsely flag an overlap with the noon deadline.</p>
-                    </div>
-                  </div>
-
+            {/* Step 2 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3 relative flex flex-col justify-between hover:border-slate-300 transition">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-lg bg-brand-700 text-white font-mono font-bold text-xs flex items-center justify-center">
+                    02
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 bg-brand-100 px-2 py-0.5 rounded">
+                    Multimodal
+                  </span>
                 </div>
-
+                <h3 className="font-bold text-slate-900 text-sm">AI Extraction</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Multi-domain analysis across circulars, office memos, minutes, interview schedules, and advisories.
+                </p>
               </div>
-            )}
-          </div>
+              <div className="pt-2 border-t border-slate-200/60 text-[11px] text-brand-700 font-medium">
+                Schema Cases A–F
+              </div>
+            </div>
 
-          <div className="bg-slate-50 border-t border-slate-200 px-6 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span className="text-xs text-slate-500 font-mono">
-              Deterministic Interval Intersection: [10:00, 11:30) ∩ [11:00, 12:30)
-            </span>
-            <button
-              onClick={() => onNavigate('conflicts')}
-              className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center space-x-1 self-start sm:self-auto"
-            >
-              <span>Open Conflict Analyzer</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            {/* Step 3 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3 relative flex flex-col justify-between hover:border-slate-300 transition">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-lg bg-indigo-700 text-white font-mono font-bold text-xs flex items-center justify-center">
+                    03
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                    Synthesis
+                  </span>
+                </div>
+                <h3 className="font-bold text-slate-900 text-sm">Summarize Key Points</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Synthesizes executive summary, urgent action items, institutional directives, and policy notes.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-slate-200/60 text-[11px] text-indigo-700 font-medium">
+                Key points & directives
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3 relative flex flex-col justify-between hover:border-slate-300 transition">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-lg bg-amber-700 text-white font-mono font-bold text-xs flex items-center justify-center">
+                    04
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+                    Timeline
+                  </span>
+                </div>
+                <h3 className="font-bold text-slate-900 text-sm">Events & Deadlines</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Isolates start/end timestamps, venues, submission deadlines, and discrete tasks.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-slate-200/60 text-[11px] text-amber-700 font-medium">
+                ISO dates & venues
+              </div>
+            </div>
+
+            {/* Step 5 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3 relative flex flex-col justify-between hover:border-slate-300 transition">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-lg bg-emerald-700 text-white font-mono font-bold text-xs flex items-center justify-center">
+                    05
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                    Verification
+                  </span>
+                </div>
+                <h3 className="font-bold text-slate-900 text-sm">Review & Confirm</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Side-by-side human-in-the-loop verification, conflict detection, and 1-click calendar export.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-slate-200/60 text-[11px] text-emerald-700 font-medium">
+                RFC 5545 .ics export
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -294,7 +262,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             Human-in-the-Loop Process
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            From Raw Circular to Verified Calendar
+            From Raw Document to Verified Schedule
           </h2>
           <p className="text-sm text-slate-600">
             Intelligent entity extraction pairs with explicit human review before any record enters your official schedule.
@@ -419,7 +387,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 </li>
                 <li className="flex items-start space-x-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span><strong>Unspecified Durations:</strong> If a circular lists only a start time, duration is flagged rather than guessed.</span>
+                  <span><strong>Unspecified Durations:</strong> If a document lists only a start time, duration is flagged rather than guessed.</span>
                 </li>
               </ul>
             </div>
