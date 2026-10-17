@@ -35,9 +35,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       {/* Header and Search */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Notice Processing History</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Document Processing History</h1>
           <p className="text-xs text-slate-500 mt-1">
-            Archived circulars, extraction statuses, and persisted scheduling records.
+            Archived circulars, office memos, recruitment notices, and extraction records.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           <input
             type="text"
-            placeholder="Search saved circulars..."
+            placeholder="Search saved documents..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
@@ -58,9 +58,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       {filteredNotices.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-md mx-auto space-y-3">
           <FileText className="w-10 h-10 text-slate-400 mx-auto" />
-          <h2 className="text-sm font-bold text-slate-900">No matching circulars found</h2>
+          <h2 className="text-sm font-bold text-slate-900">No matching documents found</h2>
           <p className="text-xs text-slate-500">
-            {searchQuery ? 'Try another search term.' : 'Uploaded notices will be listed here.'}
+            {searchQuery ? 'Try another search term.' : 'Uploaded documents will be listed here.'}
           </p>
         </div>
       ) : (
@@ -69,12 +69,18 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             <div key={n.id} className="p-5 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               
               <div className="space-y-1.5 max-w-2xl">
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                     n.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
                   }`}>
                     {n.status}
                   </span>
+
+                  {n.documentType && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700 border border-brand-200 px-2 py-0.5 rounded">
+                      {n.documentType.replace(/_/g, ' ')}
+                    </span>
+                  )}
                   
                   {n.isDemo && (
                     <span className="text-[9px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
@@ -89,12 +95,22 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 
                 <h3 className="font-bold text-slate-900 text-sm">{n.title}</h3>
                 
-                <p className="text-xs text-slate-500 line-clamp-1 font-mono">
-                  "{n.rawText}"
-                </p>
+                {n.summary ? (
+                  <p className="text-xs text-slate-600 line-clamp-2">
+                    {n.summary}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500 line-clamp-1 font-mono">
+                    "{n.rawText}"
+                  </p>
+                )}
 
                 <div className="flex items-center space-x-4 text-xs text-slate-500 pt-1">
-                  <span>{n.extractedEventsCount} events extracted</span>
+                  <span>
+                    {n.extractedEventsCount > 0 
+                      ? `${n.extractedEventsCount} events extracted` 
+                      : 'Reference Document (0 events)'}
+                  </span>
                   <span>Format: {n.fileType.toUpperCase()}</span>
                 </div>
               </div>

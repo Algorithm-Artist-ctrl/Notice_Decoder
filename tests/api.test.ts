@@ -425,5 +425,125 @@ describe('Authentication & User Isolation Suite', () => {
   });
 });
 
+describe('Multi-Domain Document-to-Action & Preferences Suite', () => {
+  it('processes corporate office memo and classifies document type with summary', async () => {
+    const res = await app.request('/api/notices/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Executive All-Hands & Q4 Sync',
+        text: 'To all staff: The Q4 Product Strategy All-Hands meeting is scheduled on 18 Nov 2026 from 10:00 to 11:30 in Boardroom A. Design system review is on 18 Nov from 11:00 to 12:00 in Room 2B. Final roadmap signoff deadline is 18 Nov at 17:00.',
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.notice.documentType).toBeDefined();
+    expect(body.data.notice.summary).toBeDefined();
+    expect(body.data.notice.actionableItemsCount).toBeGreaterThan(0);
+    expect(body.data.events.length).toBeGreaterThan(0);
+
+    // Clean up
+    await app.request(`/api/notices/${body.data.notice.id}`, { method: 'DELETE' });
+  });
+
+  it('supports zero-date reference documents without hallucinating events', async () => {
+    const res = await app.request('/api/notices/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Corporate Security & Compliance Policy',
+        text: 'POLICY DIRECTIVE: All employees must use multi-factor authentication. API keys and passwords must never be stored in plain text or public repositories. Security incidents must be reported immediately to security@company.internal.',
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.notice.summary).toBeDefined();
+    expect(body.data.notice.keyInformation).toBeDefined();
+    expect(body.data.notice.keyInformation.length).toBeGreaterThan(0);
+    // Has 0 events and does not crash or create hallucinated events
+    expect(body.data.events.length).toBe(0);
+
+    // Confirming a 0-event reference document should succeed
+    const confirmRes = await app.request(`/api/notices/${body.data.notice.id}/confirm`, {
+      method: 'POST',
+    });
+    expect(confirmRes.status).toBe(200);
+    const confirmBody = await confirmRes.json();
+    expect(confirmBody.success).toBe(true);
+
+    // Clean up
+    await app.request(`/api/notices/${body.data.notice.id}`, { method: 'DELETE' });
+  });
+
+  it('verifies that newly registered users get a clean, zero-fake empty state', async () => {
+    const cleanUserEmail = `clean_user_${Date.now()}@example.com`;
+    const signUpRes = await app.request('/api/auth/sign-up', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanUserEmail, password: 'StrongPassword123!', name: 'Clean User' }),
+    });
+    const { token } = await signUpRes.json();
+
+    // Authenticated user listing notices must see 0 notices (clean slate, no demo notices)
+    const listRes = await app.request('/api/notices', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const listBody = await listRes.json();
+    expect(listBody.success).toBe(true);
+    expect(listBody.data).toEqual([]);
+
+    // Schedule should also be empty
+    const scheduleRes = await app.request('/api/schedule', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const scheduleBody = await scheduleRes.json();
+    expect(scheduleBody.success).toBe(true);
+    expect(scheduleBody.data).toEqual([]);
+  });
+
+  it('persists and retrieves user preferences in Neon PostgreSQL', async () => {
+    const prefUserEmail = `pref_user_${Date.now()}@example.com`;
+    const signUpRes = await app.request('/api/auth/sign-up', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: prefUserEmail, password: 'StrongPassword123!', name: 'Pref User' }),
+    });
+    const { token } = await signUpRes.json();
+
+    // Save preferences
+    const updateRes = await app.request('/api/preferences', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        timezone: 'America/New_York',
+        reminderLeadTimeMinutes: 60,
+        notificationPreferences: { email: true, calendar: true, push: true },
+      }),
+    });
+    expect(updateRes.status).toBe(200);
+    const updateBody = await updateRes.json();
+    expect(updateBody.success).toBe(true);
+    expect(updateBody.data.timezone).toBe('America/New_York');
+    expect(updateBody.data.reminderLeadTimeMinutes).toBe(60);
+
+    // Retrieve preferences
+    const getRes = await app.request('/api/preferences', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    expect(getRes.status).toBe(200);
+    const getBody = await getRes.json();
+    expect(getBody.success).toBe(true);
+    expect(getBody.data.timezone).toBe('America/New_York');
+    expect(getBody.data.reminderLeadTimeMinutes).toBe(60);
+    expect(getBody.data.notificationPreferences.push).toBe(true);
+  });
+});
+
+
 
 

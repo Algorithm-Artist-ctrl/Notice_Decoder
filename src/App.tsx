@@ -105,6 +105,14 @@ export const App: React.FC = () => {
         .then(data => {
           if (data.user) {
             setAuthUser(data.user);
+            apiClient.get('/api/preferences')
+              .then(prefRes => {
+                if (prefRes.data?.timezone) {
+                  setTimezone(prefRes.data.timezone);
+                  localStorage.setItem('notice_decoder_tz', prefRes.data.timezone);
+                }
+              })
+              .catch(() => {});
           } else {
             localStorage.removeItem('notice_decoder_token');
           }
@@ -151,10 +159,13 @@ export const App: React.FC = () => {
     navigateToTab('landing');
   };
 
-  const handleTimezoneChange = (newTz: string) => {
+  const handleTimezoneChange = async (newTz: string) => {
     setTimezone(newTz);
     localStorage.setItem('notice_decoder_tz', newTz);
     showToast(`Timezone updated to ${newTz}`, 'info');
+    try {
+      await apiClient.put('/api/preferences', { timezone: newTz });
+    } catch {}
   };
 
   const handleLoadDemoNotice = async () => {

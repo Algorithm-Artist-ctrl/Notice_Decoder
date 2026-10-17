@@ -22,6 +22,14 @@ interface SettingsViewProps {
 export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTimezone }) => {
   const [healthData, setHealthData] = useState<any>(null);
   const [isTestingDb, setIsTestingDb] = useState(false);
+  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [leadTime, setLeadTime] = useState<number>(30);
+  const [notifications, setNotifications] = useState({
+    email: true,
+    calendar: true,
+    push: false,
+  });
 
   const fetchHealth = async () => {
     try {
@@ -35,9 +43,49 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
     }
   };
 
+  const fetchPreferences = async () => {
+    try {
+      const res = await apiClient.get('/api/preferences');
+      if (res.data) {
+        if (res.data.timezone && res.data.timezone !== timezone) {
+          onChangeTimezone(res.data.timezone);
+        }
+        if (typeof res.data.reminderLeadTimeMinutes === 'number') {
+          setLeadTime(res.data.reminderLeadTimeMinutes);
+        }
+        if (res.data.notificationPreferences) {
+          setNotifications(res.data.notificationPreferences);
+        }
+      }
+    } catch (e) {
+      // Graceful fallback
+    }
+  };
+
   useEffect(() => {
     fetchHealth();
+    fetchPreferences();
   }, []);
+
+  const handleSavePreferences = async () => {
+    try {
+      setIsSavingPrefs(true);
+      setSaveSuccessMsg(null);
+      const res = await apiClient.put('/api/preferences', {
+        timezone,
+        reminderLeadTimeMinutes: leadTime,
+        notificationPreferences: notifications,
+      });
+      if (res.success) {
+        setSaveSuccessMsg('Preferences saved to PostgreSQL (user_preferences table)');
+        setTimeout(() => setSaveSuccessMsg(null), 4000);
+      }
+    } catch (e: any) {
+      alert(`Failed to save preferences: ${e.message}`);
+    } finally {
+      setIsSavingPrefs(false);
+    }
+  };
 
   const timezones = [
     'Asia/Kolkata',
@@ -54,33 +102,110 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">System Configuration & Help</h1>
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">System Configuration & Settings</h1>
         <p className="text-xs text-slate-500 mt-1">
           Timezone preferences, database connectivity status, AI engine diagnostics, and privacy policies.
         </p>
       </div>
 
-      {/* 1. Timezone Preference */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center space-x-2 text-slate-900 font-bold text-sm">
-          <Globe className="w-4 h-4 text-brand-600" />
-          <h2>Schedule Timezone Preference</h2>
+      {/* 1. User & Schedule Preferences (Persisted to PostgreSQL) */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-slate-900 font-bold text-sm">
+            <Globe className="w-4 h-4 text-brand-600" />
+            <h2>Schedule & Notification Preferences</h2>
+          </div>
+          {saveSuccessMsg && (
+            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1 animate-fade-in">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{saveSuccessMsg}</span>
+            </span>
+          )}
         </div>
-        <p className="text-xs text-slate-500">
-          All extracted circular times are normalized to this timezone for deterministic conflict calculation and .ics export.
+
+        <p className="text-xs text-slate-500 leading-relaxed">
+          Extracted dates and events are normalized to this timezone. Preferences are securely persisted to your user profile in Neon PostgreSQL.
         </p>
-        <div className="max-w-xs">
-          <label htmlFor="tz-select" className="sr-only">Schedule Timezone</label>
-          <select
-            id="tz-select"
-            value={timezone}
-            onChange={(e) => onChangeTimezone(e.target.value)}
-            className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-300 bg-white"
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label htmlFor="tz-select" className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Primary Timezone
+            </label>
+            <select
+              id="tz-select"
+              value={timezone}
+              onChange={(e) => onChangeTimezone(e.target.value)}
+              className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-300 bg-white"
+            >
+              {timezones.map(tz => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="lead-time-select" className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Conflict & Deadline Lead Time Alert
+            </label>
+            <select
+              id="lead-time-select"
+              value={leadTime}
+              onChange={(e) => setLeadTime(Number(e.target.value))}
+              className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-300 bg-white"
+            >
+              <option value={15}>15 minutes before event</option>
+              <option value={30}>30 minutes before event</option>
+              <option value={60}>1 hour before event</option>
+              <option value={120}>2 hours before event</option>
+              <option value={1440}>1 day before event</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Notification channels */}
+        <div className="pt-2 border-t border-slate-100">
+          <span className="block text-xs font-semibold text-slate-700 mb-3">Notification Channels</span>
+          <div className="flex flex-wrap gap-4 text-xs">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={notifications.email}
+                onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })}
+                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-slate-700 font-medium">Email Schedule Summaries</span>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={notifications.calendar}
+                onChange={(e) => setNotifications({ ...notifications, calendar: e.target.checked })}
+                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-slate-700 font-medium">Auto RFC-5545 .ics Sync</span>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={notifications.push}
+                onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
+                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-slate-700 font-medium">Browser Push Notifications</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSavePreferences}
+            disabled={isSavingPrefs}
+            className="inline-flex items-center space-x-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition disabled:opacity-50"
           >
-            {timezones.map(tz => (
-              <option key={tz} value={tz}>{tz}</option>
-            ))}
-          </select>
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{isSavingPrefs ? 'Saving to Database...' : 'Save Preferences to Database'}</span>
+          </button>
         </div>
       </div>
 

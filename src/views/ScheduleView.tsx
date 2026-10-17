@@ -32,7 +32,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ events, onOpenNotice
     { id: 'exam', label: 'Exams & Tests' },
     { id: 'lecture', label: 'Lectures' },
     { id: 'deadline', label: 'Deadlines' },
+    { id: 'meeting', label: 'Meetings' },
     { id: 'workshop', label: 'Workshops' },
+    { id: 'job_interview', label: 'Interviews' },
+    { id: 'task', label: 'Tasks' },
   ];
 
   const filteredEvents = events.filter(e => {
@@ -69,13 +72,13 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ events, onOpenNotice
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div>
           <div className="flex items-center space-x-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Verified Academic Schedule</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Verified Commitments & Schedule</h1>
             <span className="text-[10px] font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
               RFC 5545 Ready
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Confirmed events verified by students with single-click universal calendar export.
+            Confirmed events and deadlines verified through the review gate, with single-click universal calendar export.
           </p>
         </div>
 

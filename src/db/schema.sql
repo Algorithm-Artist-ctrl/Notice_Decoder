@@ -70,3 +70,26 @@ CREATE TABLE IF NOT EXISTS conflicts_cache (
 );
 
 CREATE INDEX IF NOT EXISTS idx_conflicts_notice_id ON conflicts_cache(notice_id);
+
+-- 4. Document-to-Action Platform Extensions
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS document_type VARCHAR(64) DEFAULT 'general_document';
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS summary TEXT;
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS key_information JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS actionable_items_count INTEGER DEFAULT 0;
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS storage_path VARCHAR(512);
+
+CREATE INDEX IF NOT EXISTS idx_notices_document_type ON notices(document_type);
+
+-- 5. Event Item Type & Generalization
+ALTER TABLE events ADD COLUMN IF NOT EXISTS item_type VARCHAR(32) DEFAULT 'timed_event';
+CREATE INDEX IF NOT EXISTS idx_events_item_type ON events(item_type);
+
+-- 6. User Preferences Table
+CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id VARCHAR(64) PRIMARY KEY,
+    timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Kolkata',
+    reminder_lead_time_minutes INTEGER NOT NULL DEFAULT 30,
+    notification_preferences JSONB DEFAULT '{"email": false, "calendar": true, "push": false}'::jsonb,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+

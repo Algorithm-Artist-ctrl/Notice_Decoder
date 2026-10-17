@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems: { id: NavTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'notices', label: 'Upload Notice', icon: <UploadCloud className="w-4 h-4" /> },
+    { id: 'notices', label: 'Upload Document', icon: <UploadCloud className="w-4 h-4" /> },
     { id: 'calendar', label: 'Calendar', icon: <CalendarIcon className="w-4 h-4" /> },
     { id: 'conflicts', label: 'Conflicts', icon: <AlertTriangle className="w-4 h-4" />, badge: activeConflictsCount },
     { id: 'history', label: 'History', icon: <History className="w-4 h-4" /> },
@@ -72,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Notice Decoder
               </span>
               <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
-                Your academic schedule, made clear.
+                Turn Any Document into Clear, Actionable Information.
               </p>
             </div>
           </div>
@@ -126,15 +126,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>{timezone}</span>
             </div>
 
-            {/* Try sample notice button */}
+            {/* Isolated Sandbox Demo Button */}
             <button
               onClick={onLoadDemoNotice}
               disabled={isDemoLoading}
               className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-50 text-brand-800 border border-brand-200 hover:bg-brand-100 transition shadow-2xs disabled:opacity-60"
-              title="Load a sample circular with verified schedule items to explore the system"
+              title="Explore isolated demonstration circular (does not modify your records)"
             >
               <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-              <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
+              <span>{isDemoLoading ? 'Loading sandbox...' : 'Demo Sandbox'}</span>
             </button>
 
             {/* Auth Button or User Profile */}

@@ -18,7 +18,7 @@ try {
 
 import { testNeonConnection, getDatabaseStatus } from '../src/db/connection';
 import { NoticeStore } from '../src/db/store';
-import { extractNoticeEvents } from '../src/lib/extractor';
+import { extractNoticeEvents, extractDocumentAnalysis } from '../src/lib/extractor';
 import { generateICalendar } from '../src/lib/ics-exporter';
 import { NoticeRecord, ExtractedEvent } from '../src/types';
 import { uploadToNeonStorage, invokeNeonHelloFunction, getNeonServicesDiagnostics } from '../src/lib/neon-services';
@@ -87,7 +87,7 @@ app.get('/api/health', async (c) => {
       status: 'ok',
       version: '1.0.0',
       app: 'Notice Decoder',
-      tagline: 'Your academic schedule, made clear.',
+      tagline: 'Turn Any Document into Clear, Actionable Information.',
       timestamp: new Date().toISOString(),
       system: {
         database: dbStatus,
@@ -478,42 +478,50 @@ app.post('/api/notices/upload', async (c) => {
       }, 400);
     }
 
-    // 1. Create notice record with user ownership
-    const noticeId = isDemo ? 'demo-notice-ps02' : `notice-${Date.now()}`;
+    // 1. Run universal AI/NLP Document-to-Action analysis
+    const analysis = await extractDocumentAnalysis(rawText, {
+      apiKey: process.env.GEMINI_API_KEY,
+      timezone: process.env.DEFAULT_TIMEZONE || 'Asia/Kolkata',
+    });
+
+    const determinedTitle = title.trim() && title !== 'College Notice' && title !== 'Uploaded Notice'
+      ? title.trim()
+      : (analysis.documentTitle || 'Processed Document');
+
+    const noticeId = isDemo ? 'demo-notice-ps02' : `doc-${Date.now()}`;
     const notice: NoticeRecord = {
       id: noticeId,
       userId: user?.id,
-      title: title.trim() || 'College Notice',
+      title: determinedTitle,
+      documentType: analysis.documentType,
+      summary: analysis.summary,
+      keyInformation: analysis.keyInformation,
+      actionableItemsCount: analysis.extractedItems.length,
       rawText: rawText.trim(),
       fileName,
       fileType,
       fileSize,
       status: 'extracted',
-      extractedEventsCount: 0,
+      extractedEventsCount: analysis.extractedItems.length,
       conflictsCount: 0,
       isDemo,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    // 2. Run extraction
-    const events = await extractNoticeEvents(rawText, {
-      apiKey: process.env.GEMINI_API_KEY,
-      timezone: process.env.DEFAULT_TIMEZONE || 'Asia/Kolkata',
-    });
-
+    const events = analysis.extractedItems;
     for (const ev of events) {
       ev.noticeId = noticeId;
       ev.userId = user?.id;
     }
 
-    notice.extractedEventsCount = events.length;
-
-    // 3. Save to Neon PostgreSQL
+    // 2. Save document & events to Neon PostgreSQL
     await NoticeStore.saveNotice(notice);
-    await NoticeStore.saveEvents(events, user?.id);
+    if (events.length > 0) {
+      await NoticeStore.saveEvents(events, user?.id);
+    }
 
-    // 4. Archive file to Neon Object Storage if binary asset was uploaded
+    // 3. Archive binary asset to Neon Object Storage if uploaded
     if (buffer) {
       uploadToNeonStorage(
         `notices/${noticeId}/${fileName}`,
@@ -523,20 +531,51 @@ app.post('/api/notices/upload', async (c) => {
     }
 
     const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 5);
-    const extractionMethod = hasGeminiKey ? 'google_gemini_2.5_flash' : 'deterministic_heuristic_nlp';
+    const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const extractionMethod = hasGeminiKey ? `google_${modelName}` : 'deterministic_heuristic_nlp';
 
     return c.json({
       success: true,
-      message: 'Notice extracted successfully',
+      message: 'Document analyzed and extracted successfully',
       data: {
         notice,
         events,
+        analysis,
         extractionMethod,
       },
     });
   } catch (err: any) {
     console.error('Upload processing error:', err);
     return c.json({ success: false, error: err.message || 'Internal processing error' }, 500);
+  }
+});
+
+/**
+ * User Preferences: Get
+ */
+app.get('/api/preferences', async (c) => {
+  try {
+    const user = await verifySession(c);
+    const userId = user?.id || 'anonymous';
+    const prefs = await NoticeStore.getUserPreferences(userId);
+    return c.json({ success: true, data: prefs });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+/**
+ * User Preferences: Save
+ */
+app.put('/api/preferences', async (c) => {
+  try {
+    const user = await verifySession(c);
+    const userId = user?.id || 'anonymous';
+    const body = await c.req.json();
+    const updated = await NoticeStore.saveUserPreferences(userId, body);
+    return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
   }
 });
 
@@ -560,6 +599,30 @@ app.get('/api/calendar/export', async (c) => {
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': 'attachment; filename="notice-decoder-schedule.ics"',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+/**
+ * Get isolated sandbox demo dataset (for evaluation/presentation without DB pollution)
+ */
+app.get('/api/demo/data', async (c) => {
+  try {
+    const demoNoticeId = 'demo-notice-ps02';
+    let notice = await NoticeStore.getNoticeById(demoNoticeId);
+    let events = await NoticeStore.getEventsByNoticeId(demoNoticeId);
+
+    if (!notice || events.length === 0) {
+      await NoticeStore.seedDemoData();
+      notice = await NoticeStore.getNoticeById(demoNoticeId);
+      events = await NoticeStore.getEventsByNoticeId(demoNoticeId);
+    }
+
+    return c.json({
+      success: true,
+      data: { notice, events },
     });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);

@@ -64,15 +64,15 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
     const newEvent: ExtractedEvent = {
       id: newId,
       noticeId: notice.id,
-      title: 'New College Event',
-      category: 'lecture',
+      title: 'New Action Item',
+      category: 'task',
       kind: 'timed_event',
-      date: events[0]?.date || '2026-11-13',
-      startTime: '14:00',
-      endTime: '15:00',
+      date: events[0]?.date || new Date().toISOString().split('T')[0],
+      startTime: '10:00',
+      endTime: '11:00',
       deadlineTime: null,
-      venue: 'Campus Room',
-      departmentOrAudience: 'All Students',
+      venue: 'Office / Campus',
+      departmentOrAudience: 'All Participants',
       sourceTextEvidence: 'Manually added by user',
       confidence: 1.0,
       reviewRequired: false,
@@ -126,10 +126,15 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
             <span>Back to Dashboard</span>
           </button>
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Review & Verify Extracted Events</h1>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Review & Verify Extracted Information</h1>
             {notice.isDemo && (
               <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
                 Sample Notice
+              </span>
+            )}
+            {notice.documentType && (
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700 border border-brand-200 px-2.5 py-0.5 rounded-full">
+                {notice.documentType.replace(/_/g, ' ')}
               </span>
             )}
           </div>
@@ -149,11 +154,11 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
           <button
             onClick={handleSaveAndConfirm}
-            disabled={isSaving || events.length === 0}
+            disabled={isSaving}
             className="inline-flex items-center space-x-2 text-xs font-bold px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{isSaving ? 'Saving Records...' : 'Confirm & Save Schedule'}</span>
+            <span>{isSaving ? 'Saving...' : events.length === 0 ? 'Confirm & Save Document' : 'Confirm & Save Schedule'}</span>
           </button>
         </div>
       </div>
@@ -181,18 +186,49 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
               <FileText className="w-4 h-4 text-brand-600" />
-              <span>Source Notice Evidence</span>
+              <span>Source Document Evidence</span>
             </h2>
             <span className="text-[11px] font-mono text-slate-500">
               {notice.fileType.toUpperCase()} {notice.fileSize ? `· ${(notice.fileSize / 1024).toFixed(0)} KB` : ''}
             </span>
           </div>
 
+          {/* AI Executive Summary if available */}
+          {notice.summary && (
+            <div className="bg-brand-50/60 border border-brand-200/70 rounded-xl p-3.5 space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-800 flex items-center space-x-1">
+                <Sparkles className="w-3 h-3 text-brand-600" />
+                <span>Executive Summary</span>
+              </span>
+              <p className="text-xs text-slate-700 leading-relaxed">
+                {notice.summary}
+              </p>
+            </div>
+          )}
+
+          {/* Key Takeaways & Information Points if available */}
+          {notice.keyInformation && notice.keyInformation.length > 0 && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1">
+                <Info className="w-3 h-3 text-slate-500" />
+                <span>Key Directives & Instructions ({notice.keyInformation.length})</span>
+              </span>
+              <ul className="text-xs text-slate-600 space-y-1.5 pl-1">
+                {notice.keyInformation.map((item, idx) => (
+                  <li key={idx} className="flex items-start space-x-2">
+                    <span className="text-brand-600 font-bold">•</span>
+                    <span className="leading-snug">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono leading-relaxed text-slate-800 space-y-3">
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               {notice.title}
             </div>
-            <div className="whitespace-pre-wrap">
+            <div className="whitespace-pre-wrap max-h-60 overflow-y-auto">
               {notice.rawText}
             </div>
           </div>
@@ -227,56 +263,96 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span>Extracted Fields & Corrections ({events.length})</span>
             </h2>
-            <span className="text-[11px] text-slate-500">Click any card to edit its properties</span>
+            <span className="text-[11px] text-slate-500">
+              {events.length > 0 ? 'Click any card to edit its properties' : 'Zero-date document'}
+            </span>
           </div>
 
-          <div className="space-y-4">
-            {events.map((ev, index) => {
-              const isSelected = selectedEventId === ev.id;
-
-              return (
-                <div
-                  key={ev.id}
-                  onClick={() => setSelectedEventId(ev.id)}
-                  className={`bg-white rounded-2xl border transition p-5 shadow-xs cursor-pointer ${
-                    isSelected 
-                      ? 'border-brand-500 ring-2 ring-brand-100' 
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
+          {events.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-4 shadow-xs">
+              <div className="w-12 h-12 bg-blue-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto">
+                <Info className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 max-w-md mx-auto">
+                <h3 className="text-sm font-bold text-slate-900">Reference Document (No Dates Detected)</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  This document was analyzed as informational, policy, or advisory guidelines without scheduled dates or calendar deadlines.
+                </p>
+              </div>
+              <div className="flex justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleAddNewEvent}
+                  className="inline-flex items-center space-x-1.5 text-xs font-medium px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 transition"
                 >
-                  
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 text-xs font-mono font-bold flex items-center justify-center">
-                        {index + 1}
-                      </span>
-                      <select
-                        aria-label="Event category"
-                        value={ev.category}
-                        onChange={(e) => updateField(ev.id, 'category', e.target.value as EventCategory)}
-                        className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-800"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <option value="exam">Exam / Test</option>
-                        <option value="lecture">Lecture / Seminar</option>
-                        <option value="deadline">Submission Deadline</option>
-                        <option value="workshop">Workshop</option>
-                        <option value="meeting">Meeting</option>
-                        <option value="other">Other</option>
-                      </select>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Manual Event</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAndConfirm}
+                  disabled={isSaving}
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{isSaving ? 'Saving...' : 'Save Reference Document'}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {events.map((ev, index) => {
+                const isSelected = selectedEventId === ev.id;
 
-                      <select
-                        aria-label="Event kind"
-                        value={ev.kind}
-                        onChange={(e) => updateField(ev.id, 'kind', e.target.value as EventKind)}
-                        className="text-xs px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-600"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <option value="timed_event">Timed Event (Duration)</option>
-                        <option value="deadline_point">Discrete Deadline Point</option>
-                      </select>
-                    </div>
+                return (
+                  <div
+                    key={ev.id}
+                    onClick={() => setSelectedEventId(ev.id)}
+                    className={`bg-white rounded-2xl border transition p-5 shadow-xs cursor-pointer ${
+                      isSelected 
+                        ? 'border-brand-500 ring-2 ring-brand-100' 
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 text-xs font-mono font-bold flex items-center justify-center">
+                          {index + 1}
+                        </span>
+                        <select
+                          aria-label="Event category"
+                          value={ev.category}
+                          onChange={(e) => updateField(ev.id, 'category', e.target.value as EventCategory)}
+                          className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-800"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <option value="exam">Exam / Test</option>
+                          <option value="lecture">Lecture / Seminar</option>
+                          <option value="deadline">Submission / Deadline</option>
+                          <option value="meeting">Meeting</option>
+                          <option value="workshop">Workshop</option>
+                          <option value="job_interview">Job Interview / Placement</option>
+                          <option value="conference">Conference</option>
+                          <option value="public_filing">Public Notice / Filing</option>
+                          <option value="task">Action Task</option>
+                          <option value="other">Other</option>
+                        </select>
+
+                        <select
+                          aria-label="Event kind"
+                          value={ev.kind}
+                          onChange={(e) => updateField(ev.id, 'kind', e.target.value as EventKind)}
+                          className="text-xs px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-600"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <option value="timed_event">Timed Event (Duration)</option>
+                          <option value="deadline_point">Discrete Deadline Point</option>
+                          <option value="action_task">Action Task</option>
+                          <option value="info_point">Informational Point</option>
+                        </select>
+                      </div>
 
                     <button
                       type="button"
@@ -387,8 +463,9 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               );
             })}
           </div>
+        )}
 
-        </div>
+      </div>
 
       </div>
 

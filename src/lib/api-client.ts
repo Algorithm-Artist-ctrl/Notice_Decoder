@@ -147,6 +147,24 @@ export const apiClient = {
     return parseResponse<T>(res, correlationId);
   },
 
+  async put<T = any>(url: string, body?: any, options: { signal?: AbortSignal; headers?: Record<string, string> } = {}): Promise<T> {
+    const correlationId = generateCorrelationId();
+    const headers = getAuthHeaders({
+      'Content-Type': 'application/json',
+      'x-request-id': correlationId,
+      ...(options.headers || {}),
+    });
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : JSON.stringify({}),
+      signal: options.signal,
+    });
+
+    return parseResponse<T>(res, correlationId);
+  },
+
   async patch<T = any>(url: string, body?: any, options: { signal?: AbortSignal; headers?: Record<string, string> } = {}): Promise<T> {
     const correlationId = generateCorrelationId();
     const headers = getAuthHeaders({

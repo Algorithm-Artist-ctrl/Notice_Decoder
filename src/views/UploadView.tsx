@@ -34,25 +34,37 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-  // Sample Presets
+  // Multi-domain Presets
   const PRESETS = [
     {
       id: 'academic_sample',
-      name: 'Sample Academic Circular (Test, Lecture & Deadline)',
+      name: 'Academic Circular (Exam & Lecture)',
       title: 'Department Circular: Internal Test 2 & Guest Lecture',
       text: `All III-year CSE students: Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204. Lab records must be submitted to the department office by 12:00 noon on 13 Nov. A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.`,
     },
     {
-      id: 'exam',
-      name: 'End-Semester Exam & Practical Schedule',
-      title: 'Department of Computer Science: Nov 2026 Exam Circular',
-      text: `Notice for all B.Tech students: Machine Learning Final Exam will take place on 20 Nov 2026 from 09:30 AM to 12:30 PM in Hall A. Database Systems Lab Viva is scheduled on 20 Nov 2026 from 11:00 AM to 01:00 PM in Computer Center 2. Mini-project final code submission deadline is 20 Nov at 10:00 AM sharp to the faculty portal.`,
+      id: 'office_memo',
+      name: 'Office Memo & Strategy Sync',
+      title: 'Q4 Product Roadmap & All-Hands Meeting',
+      text: `To all Engineering and Product staff: The Q4 Product Strategy All-Hands is scheduled for 18 Nov 2026 from 10:00 AM to 11:30 AM in Main Conference Room A and Zoom. The Q3 Sprint Review will run from 11:00 AM to 12:00 PM in Room B. Architecture sign-off documents must be submitted to Jira by 05:00 PM on 18 Nov.`,
     },
     {
-      id: 'placement',
-      name: 'Campus Placement & Pre-Placement Talk',
-      title: 'Training & Placement Cell: Technical Assessment Notice',
-      text: `All eligible final year students: Pre-Placement Talk by Google Engineering will be held on 25 Nov 2026 from 10:00 AM to 11:30 AM at Central Auditorium. Online Coding Assessment will start promptly on 25 Nov 2026 from 11:00 AM to 12:30 PM in Lab 4. Resume verification deadline is 25 Nov at 09:00 AM at the T&P desk.`,
+      id: 'conference_event',
+      name: 'Tech Conference & Workshop',
+      title: 'DevConf 2026: Keynote & Developer Workshops',
+      text: `DevConf 2026 Announcement: The Opening Keynote takes place on 22 Nov 2026 from 09:00 AM to 10:30 AM in Hall 1. Hands-on Rust Workshop is scheduled on 22 Nov 2026 from 10:00 AM to 12:30 PM in Workshop Studio. Speaker presentation slides must be submitted to the organizer portal by 08:30 AM on 22 Nov.`,
+    },
+    {
+      id: 'placement_interview',
+      name: 'Campus Recruitment & Interviews',
+      title: 'Engineering Recruitment: Technical Assessment & Interviews',
+      text: `Candidate Schedule: Pre-Placement Presentation starts on 25 Nov 2026 at 09:30 AM to 10:30 AM in Auditorium 2. Technical Coding Round 1 will be conducted from 10:15 AM to 11:45 AM in Lab 3. Document submission deadline is 25 Nov at 09:00 AM at the reception desk.`,
+    },
+    {
+      id: 'policy_advisory',
+      name: 'Security Advisory (Zero-Date Reference)',
+      title: 'Information Security & Data Protection Policy Directive',
+      text: `MEMORANDUM ON INFORMATION SECURITY: All team members must adhere to strict zero-trust credential hygiene. API keys and service account secrets must never be committed to source repositories. Multi-Factor Authentication is strictly mandatory for all production console access. Any suspected compromise must be reported immediately to security@domain.org.`,
     },
   ];
 
@@ -95,7 +107,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
 
     try {
       // Stage 1
-      setProgressStage('Validating file integrity and 10MB limits...');
+      setProgressStage('Validating document integrity and 10MB limits...');
       setProgressPercent(15);
       await new Promise(r => setTimeout(r, 200));
 
@@ -117,29 +129,29 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         result = await apiClient.upload('/api/notices/upload', formData);
       } else {
         if (!rawText.trim()) {
-          throw new Error('Please enter or paste the notice text');
+          throw new Error('Please enter or paste the document text');
         }
 
         setProgressStage('Parsing unstructured text segments...');
         setProgressPercent(40);
 
         result = await apiClient.post('/api/notices/upload', {
-          title: title || 'Pasted Notice',
+          title: title || 'Pasted Document',
           text: rawText,
         });
       }
 
       // Stage 3
-      setProgressStage('Extracting academic dates, times, venues and deadlines...');
+      setProgressStage('Classifying document purpose & extracting actionable points...');
       setProgressPercent(70);
       await new Promise(r => setTimeout(r, 250));
 
       if (!result.success || !result.data) {
-        throw new Error(result.error || 'Failed to process notice document');
+        throw new Error(result.error || 'Failed to process document');
       }
 
       // Stage 4
-      setProgressStage('Normalizing time intervals and calculating conflicts...');
+      setProgressStage('Normalizing dates, time intervals and detecting conflicts...');
       setProgressPercent(90);
       await new Promise(r => setTimeout(r, 200));
 
@@ -149,7 +161,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
 
       onUploadSuccess(result.data.notice, result.data.events);
     } catch (err: any) {
-      setErrorMessage(err.message || 'An error occurred during notice extraction');
+      setErrorMessage(err.message || 'An error occurred during document extraction');
     } finally {
       setIsProcessing(false);
     }
@@ -167,9 +179,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Upload College Notice</h1>
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Upload & Analyze Document</h1>
         <p className="text-xs text-slate-500 mt-1">
-          Upload circulars, exam schedules, or departmental notices for deterministic conflict extraction.
+          Upload circulars, office memos, meeting minutes, interview calls, conference announcements, or public advisories to extract clear, actionable information.
         </p>
       </div>
 
@@ -177,7 +189,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
         <span className="text-xs font-semibold text-slate-700 flex items-center space-x-1.5">
           <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-          <span>Quick Test Presets (Click to load sample circulars):</span>
+          <span>Quick Test Presets (Click to load sample documents across domains):</span>
         </span>
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((p) => (
@@ -198,12 +210,12 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         {/* Title Input */}
         <div>
           <label htmlFor="notice-title" className="block text-xs font-semibold text-slate-700 mb-1">
-            Notice / Circular Title
+            Document Title <span className="text-slate-400 font-normal">(Optional — auto-detected if empty)</span>
           </label>
           <input
             id="notice-title"
             type="text"
-            placeholder="e.g. III-Year CSE Internal Test 2 & Guest Lecture"
+            placeholder="e.g. Q4 Executive Team Sync, TechConf 2026 CFP, or Circular No. 42"
             value={title}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
             disabled={isProcessing}
@@ -222,7 +234,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
             }`}
           >
             <UploadCloud className="w-4 h-4" />
-            <span>Upload Document / Photo</span>
+            <span>Upload Document / Scan (PDF, PNG, JPG)</span>
           </button>
           <button
             onClick={() => { setActiveTab('text'); setErrorMessage(null); }}
@@ -233,7 +245,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Paste Notice Text (WhatsApp / Portal)</span>
+            <span>Paste Document Text (Email, Memo, Circular)</span>
           </button>
         </div>
 
@@ -287,7 +299,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm">
-                      Drag & Drop your notice here, or <span className="text-brand-600 underline">browse</span>
+                      Drag & Drop your document here, or <span className="text-brand-600 underline">browse</span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-1">
                       Supports PDF, PNG, and JPEG files up to 10 MB.
@@ -298,7 +310,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
                     <span>•</span>
                     <span>OCR for scans</span>
                     <span>•</span>
-                    <span>Client + Server 10MB limit</span>
+                    <span>10MB size limit</span>
                   </div>
                 </div>
               )}
@@ -310,12 +322,12 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         {activeTab === 'text' && (
           <div className="space-y-2">
             <label htmlFor="raw-notice-text" className="block text-xs font-semibold text-slate-700">
-              Notice Text
+              Document Text
             </label>
             <textarea
               id="raw-notice-text"
               rows={7}
-              placeholder="Paste the circular or notice text directly here..."
+              placeholder="Paste the circular, email, memo, or notice text directly here..."
               value={rawText}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRawText(e.target.value)}
               disabled={isProcessing}
@@ -365,7 +377,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
             disabled={isProcessing || (activeTab === 'file' && !selectedFile) || (activeTab === 'text' && !rawText.trim())}
             className="inline-flex items-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-medium px-6 py-3 rounded-xl text-xs shadow-md transition disabled:opacity-50"
           >
-            <span>{isProcessing ? 'Processing Notice...' : 'Extract & Review Events'}</span>
+            <span>{isProcessing ? 'Analyzing Document...' : 'Analyze & Extract Information'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

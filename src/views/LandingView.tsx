@@ -50,15 +50,15 @@ export const LandingView: React.FC<LandingViewProps> = ({
           >
             <div className="inline-flex items-center space-x-2 bg-brand-50/80 border border-brand-200/80 text-brand-800 text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
-              <span>Your academic schedule, made clear.</span>
+              <span>Turn Any Document into Clear, Actionable Information.</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
-              Turn every college notice into a <span className="text-brand-600 underline decoration-brand-200 decoration-wavy">clear plan.</span>
+              Turn any document into a <span className="text-brand-600 underline decoration-brand-200 decoration-wavy">clear plan.</span>
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-xl">
-              Extract important dates, review event details, spot scheduling conflicts and keep your academic commitments organized. Notice Decoder converts unstructured circulars into verified, calendar-ready schedules.
+              Extract important dates, deadlines, tasks and directives from academic circulars, office memos, meeting minutes, interview calls, conference announcements, and public advisories. Notice Decoder converts unstructured documents into verified, calendar-ready schedules and key information summaries.
             </p>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
@@ -67,7 +67,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 className="inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-semibold px-6 py-3.5 rounded-xl shadow-sm hover:shadow transition-all text-sm group"
               >
                 <UploadCloud className="w-4 h-4 text-brand-300 transition-transform group-hover:-translate-y-0.5" />
-                <span>Upload a Notice</span>
+                <span>Upload a Document</span>
                 <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-0.5" />
               </button>
 
@@ -315,9 +315,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
               01
             </div>
             <div className="space-y-1">
-              <h3 className="font-bold text-slate-900 text-base">Upload College Notice</h3>
+              <h3 className="font-bold text-slate-900 text-base">Upload Any Document</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Accepts PDF circulars, phone camera photos of noticeboards, or pasted WhatsApp circular text up to 10 MB.
+                Accepts PDF documents, photos of physical memos, or pasted announcement text up to 10 MB.
               </p>
             </div>
             <ul className="text-xs text-slate-600 space-y-1.5 pt-2 border-t border-slate-100">
@@ -438,10 +438,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
       <section className="max-w-7xl mx-auto bg-navy-900 rounded-3xl p-8 sm:p-12 text-white text-center space-y-6">
         <div className="max-w-2xl mx-auto space-y-3">
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Ready to organize your academic schedule?
+            Ready to turn your documents into a clear plan?
           </h2>
           <p className="text-sm text-slate-300 leading-relaxed">
-            Upload your first circular or explore our sample notice to experience conflict-free timetable management.
+            Upload your first document or explore our sample notice to experience conflict-free scheduling and clear action items.
           </p>
         </div>
 
@@ -451,7 +451,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold px-6 py-3.5 rounded-xl shadow-md transition text-sm"
           >
             <UploadCloud className="w-4 h-4" />
-            <span>Upload a Notice</span>
+            <span>Upload a Document</span>
           </button>
           <button
             onClick={onLoadDemo}

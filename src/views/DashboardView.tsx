@@ -126,13 +126,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div>
           <div className="flex items-center space-x-2">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Academic Schedule Dashboard</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Document-to-Action Dashboard</h1>
             <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
               Live Stored Records
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time conflict detection and synchronized schedule from verified circulars.
+            Real-time conflict detection and synchronized schedule extracted from your verified documents.
           </p>
         </div>
 
@@ -142,16 +142,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="inline-flex items-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-medium px-4 py-2.5 rounded-xl text-xs shadow-xs transition"
           >
             <UploadCloud className="w-4 h-4 text-brand-300" />
-            <span>Upload Notice</span>
+            <span>Upload Document</span>
           </button>
           
           <button
             onClick={onLoadDemo}
             disabled={isDemoLoading}
             className="inline-flex items-center space-x-1.5 bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 font-medium px-4 py-2.5 rounded-xl text-xs transition disabled:opacity-50"
+            title="Open isolated demonstration sandbox (does not modify your account records)"
           >
             <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-            <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
+            <span>{isDemoLoading ? 'Loading sandbox...' : 'Demo Sandbox'}</span>
           </button>
         </div>
       </div>
@@ -164,9 +165,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           
           <div className="space-y-1.5">
-            <h2 className="text-xl font-bold text-slate-900">No notices uploaded yet</h2>
+            <h2 className="text-xl font-bold text-slate-900">No documents processed yet</h2>
             <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              Upload an academic circular, timetable, or exam notice to view upcoming commitments and detect schedule conflicts, or explore our pre-configured sample notice.
+              Upload any document—such as academic circulars, office notices, meeting minutes, conference announcements, job notifications, or government advisories—to extract dates, deadlines, and key actionable points.
             </p>
           </div>
 
@@ -176,15 +177,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-semibold px-6 py-3 rounded-xl text-xs transition shadow-sm"
             >
               <UploadCloud className="w-4 h-4 text-brand-300" />
-              <span>Upload Notice</span>
+              <span>Upload Document</span>
             </button>
             <button
               onClick={onLoadDemo}
               disabled={isDemoLoading}
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-6 py-3 rounded-xl text-xs transition border border-slate-200"
+              title="Open isolated demonstration sandbox (does not modify your account records)"
             >
               <Sparkles className="w-4 h-4 text-brand-600" />
-              <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
+              <span>{isDemoLoading ? 'Loading sandbox...' : 'Explore Demo Sandbox'}</span>
             </button>
           </div>
         </div>
@@ -195,20 +197,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-                <span>Saved Notices</span>
+                <span>Processed Documents</span>
                 <FileText className="w-4 h-4 text-slate-400" />
               </div>
               <div className="text-2xl font-extrabold text-slate-900">{notices.length}</div>
-              <p className="text-[11px] text-slate-500">Processed into schedule records</p>
+              <p className="text-[11px] text-slate-500">Stored in your private database</p>
             </div>
 
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-                <span>Confirmed Events</span>
+                <span>Confirmed Commitments</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               </div>
               <div className="text-2xl font-extrabold text-slate-900">{events.length}</div>
-              <p className="text-[11px] text-emerald-700 font-medium">Verified by student review</p>
+              <p className="text-[11px] text-emerald-700 font-medium">Verified by human review</p>
             </div>
 
             <div className={`p-5 rounded-2xl border shadow-xs space-y-2 ${hardOverlaps.length > 0 ? 'bg-red-50/70 border-red-200' : 'bg-white border-slate-200'}`}>
@@ -221,7 +223,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className={`text-2xl font-extrabold ${hardOverlaps.length > 0 ? 'text-red-700' : 'text-slate-900'}`}>
                 {hardOverlaps.length}
               </div>
-              <p className="text-[11px] text-red-600">Simultaneous event clashes</p>
+              <p className="text-[11px] text-red-600">Simultaneous schedule clashes</p>
             </div>
 
             <div className={`p-5 rounded-2xl border shadow-xs space-y-2 ${deadlineWarnings.length > 0 ? 'bg-amber-50/70 border-amber-200' : 'bg-white border-slate-200'}`}>
@@ -234,7 +236,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className={`text-2xl font-extrabold ${deadlineWarnings.length > 0 ? 'text-amber-700' : 'text-slate-900'}`}>
                 {deadlineWarnings.length}
               </div>
-              <p className="text-[11px] text-amber-700">Deadlines inside active events</p>
+              <p className="text-[11px] text-amber-700">Deadlines inside active commitments</p>
             </div>
 
           </div>

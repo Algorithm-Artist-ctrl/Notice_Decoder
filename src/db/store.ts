@@ -1,12 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import { NoticeRecord, ExtractedEvent, ConflictRecord } from '../types';
+import { NoticeRecord, ExtractedEvent, ConflictRecord, UserPreferences, DocumentType } from '../types';
 import { detectConflicts } from '../lib/conflict-engine';
 import { getNeonClient } from './connection';
 
 interface LocalStoreData {
   notices: NoticeRecord[];
   events: ExtractedEvent[];
+  userPreferences?: Record<string, UserPreferences>;
 }
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
@@ -21,7 +22,7 @@ function ensureDataFile(): LocalStoreData {
     } catch {}
   }
   if (!fs.existsSync(DATA_FILE)) {
-    const initial: LocalStoreData = { notices: [], events: [] };
+    const initial: LocalStoreData = { notices: [], events: [], userPreferences: {} };
     try {
       fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2), 'utf-8');
     } catch {}
@@ -31,7 +32,7 @@ function ensureDataFile(): LocalStoreData {
     const content = fs.readFileSync(DATA_FILE, 'utf-8');
     return JSON.parse(content);
   } catch {
-    const initial: LocalStoreData = { notices: [], events: [] };
+    const initial: LocalStoreData = { notices: [], events: [], userPreferences: {} };
     return initial;
   }
 }
@@ -72,12 +73,38 @@ function mapRowToEvent(r: any): ExtractedEvent {
   };
 }
 
+function mapRowToNotice(r: any, eventCount = 0): NoticeRecord {
+  return {
+    id: String(r.id),
+    userId: r.user_id ? String(r.user_id) : undefined,
+    title: String(r.title),
+    documentType: (r.document_type || 'general_advisory') as DocumentType,
+    summary: r.summary ? String(r.summary) : undefined,
+    keyInformation: Array.isArray(r.key_information)
+      ? r.key_information
+      : (typeof r.key_information === 'string' ? JSON.parse(r.key_information) : []),
+    actionableItemsCount: Number(r.actionable_items_count) || eventCount,
+    rawText: String(r.raw_text),
+    fileName: r.file_name ? String(r.file_name) : undefined,
+    fileType: r.file_type,
+    fileSize: r.file_size ? Number(r.file_size) : undefined,
+    storagePath: r.storage_path ? String(r.storage_path) : undefined,
+    status: r.status,
+    errorMessage: r.error_message ? String(r.error_message) : undefined,
+    extractedEventsCount: Number(r.extracted_events_count) || eventCount,
+    conflictsCount: 0,
+    isDemo: Boolean(r.is_demo),
+    createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
+    updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : new Date().toISOString(),
+  };
+}
+
 /**
  * Notice & Event Data Access Layer with direct Neon PostgreSQL persistence
  */
 export class NoticeStore {
   /**
-   * Saves a new notice
+   * Saves a new notice / document record
    */
   static async saveNotice(notice: NoticeRecord): Promise<NoticeRecord> {
     const neon = getNeonClient();
@@ -85,7 +112,8 @@ export class NoticeStore {
       try {
         await neon`
           INSERT INTO notices (
-            id, user_id, title, raw_text, file_name, file_type, file_size, status, error_message, is_demo, created_at, updated_at
+            id, user_id, title, raw_text, file_name, file_type, file_size, status, error_message, is_demo, 
+            document_type, summary, key_information, actionable_items_count, storage_path, created_at, updated_at
           ) VALUES (
             ${notice.id}, 
             ${notice.userId || null}, 
@@ -97,6 +125,11 @@ export class NoticeStore {
             ${notice.status}, 
             ${notice.errorMessage || null}, 
             ${Boolean(notice.isDemo)}, 
+            ${notice.documentType || 'general_document'},
+            ${notice.summary || null},
+            ${JSON.stringify(notice.keyInformation || [])}::jsonb,
+            ${notice.actionableItemsCount || 0},
+            ${notice.storagePath || null},
             ${notice.createdAt}, 
             ${notice.updatedAt}
           )
@@ -104,6 +137,11 @@ export class NoticeStore {
             title = EXCLUDED.title,
             status = EXCLUDED.status,
             error_message = EXCLUDED.error_message,
+            document_type = EXCLUDED.document_type,
+            summary = EXCLUDED.summary,
+            key_information = EXCLUDED.key_information,
+            actionable_items_count = EXCLUDED.actionable_items_count,
+            storage_path = EXCLUDED.storage_path,
             updated_at = EXCLUDED.updated_at;
         `;
         return notice;
@@ -117,7 +155,6 @@ export class NoticeStore {
       throw new Error('Neon database is required in production environment.');
     }
 
-    // Mirror to local store for offline/test reliability when not in strict production
     const data = ensureDataFile();
     const idx = data.notices.findIndex(n => n.id === notice.id);
     if (idx >= 0) {
@@ -130,9 +167,9 @@ export class NoticeStore {
   }
 
   /**
-   * Retrieves notices with user isolation:
-   * - Authenticated user: returns their notices + sample demo notices
-   * - Anonymous user: returns ONLY sample demo notices
+   * Retrieves notices with strict user isolation:
+   * - Authenticated user: returns ONLY their owned notices (never mixes demo notices automatically)
+   * - Anonymous user: returns ONLY public demo sandbox notices
    */
   static async listNotices(userId?: string): Promise<NoticeRecord[]> {
     const neon = getNeonClient();
@@ -145,12 +182,11 @@ export class NoticeStore {
                    COUNT(DISTINCT e.id)::int as extracted_events_count
             FROM notices n
             LEFT JOIN events e ON e.notice_id = n.id
-            WHERE n.user_id = ${userId} OR n.is_demo = TRUE
+            WHERE n.user_id = ${userId}
             GROUP BY n.id
             ORDER BY n.created_at DESC;
           `;
         } else {
-          // Anonymous visitor: ONLY sample demo notices
           rows = await neon`
             SELECT n.*, 
                    COUNT(DISTINCT e.id)::int as extracted_events_count
@@ -162,26 +198,7 @@ export class NoticeStore {
           `;
         }
 
-        const notices: NoticeRecord[] = [];
-        for (const r of rows) {
-          notices.push({
-            id: String(r.id),
-            userId: r.user_id ? String(r.user_id) : undefined,
-            title: String(r.title),
-            rawText: String(r.raw_text),
-            fileName: r.file_name ? String(r.file_name) : undefined,
-            fileType: r.file_type,
-            fileSize: r.file_size ? Number(r.file_size) : undefined,
-            status: r.status,
-            errorMessage: r.error_message ? String(r.error_message) : undefined,
-            extractedEventsCount: Number(r.extracted_events_count) || 0,
-            conflictsCount: 0,
-            isDemo: Boolean(r.is_demo),
-            createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
-            updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : new Date().toISOString(),
-          });
-        }
-        return notices;
+        return rows.map(r => mapRowToNotice(r, Number(r.extracted_events_count) || 0));
       } catch (err: any) {
         console.error('Neon listNotices failed:', err);
         if (isProduction) {
@@ -195,7 +212,7 @@ export class NoticeStore {
     const data = ensureDataFile();
     let filtered = data.notices;
     if (userId) {
-      filtered = filtered.filter(n => n.userId === userId || n.isDemo);
+      filtered = filtered.filter(n => n.userId === userId);
     } else {
       filtered = filtered.filter(n => n.isDemo);
     }
@@ -223,29 +240,20 @@ export class NoticeStore {
           const r = rows[0];
           const recordUserId = r.user_id ? String(r.user_id) : undefined;
           const isDemo = Boolean(r.is_demo);
-
-          // Enforce ownership: reject if private and doesn't belong to current user
-          if (!isDemo && (!userId || recordUserId !== userId)) {
-            return null;
+          // Enforce ownership:
+          // - Private notice with owner: only that owner can access
+          // - Anonymous upload: only accessible in anonymous session
+          // - Demo notice: accessible to everyone
+          if (!isDemo) {
+            if (recordUserId) {
+              if (recordUserId !== userId) return null;
+            } else {
+              if (userId) return null;
+            }
           }
 
           const events = await this.getEventsByNoticeId(id, userId);
-          return {
-            id: String(r.id),
-            userId: recordUserId,
-            title: String(r.title),
-            rawText: String(r.raw_text),
-            fileName: r.file_name ? String(r.file_name) : undefined,
-            fileType: r.file_type,
-            fileSize: r.file_size ? Number(r.file_size) : undefined,
-            status: r.status,
-            errorMessage: r.error_message ? String(r.error_message) : undefined,
-            extractedEventsCount: events.length,
-            conflictsCount: 0,
-            isDemo,
-            createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
-            updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : new Date().toISOString(),
-          };
+          return mapRowToNotice(r, events.length);
         }
         return null;
       } catch (err: any) {
@@ -258,36 +266,50 @@ export class NoticeStore {
       throw new Error('Neon database is required in production environment.');
     }
 
-    const notices = await this.listNotices(userId);
-    return notices.find(n => n.id === id) || null;
+    const data = ensureDataFile();
+    const notice = data.notices.find(n => n.id === id);
+    if (!notice) return null;
+
+    if (!notice.isDemo) {
+      if (notice.userId) {
+        if (notice.userId !== userId) return null;
+      } else {
+        if (userId) return null;
+      }
+    }
+
+    const noticeEvents = data.events.filter(e => e.noticeId === id);
+    return {
+      ...notice,
+      extractedEventsCount: noticeEvents.length,
+    };
   }
 
   /**
    * Deletes notice and associated events
    */
-  static async deleteNotice(id: string, userId?: string): Promise<boolean> {
+  static async deleteNotice(id: string, userId: string): Promise<boolean> {
     const neon = getNeonClient();
     if (neon) {
       try {
-        // Verify ownership and forbid deleting sample demo notices
-        const check = await neon`SELECT user_id, is_demo FROM notices WHERE id = ${id} LIMIT 1;`;
-        if (check.length === 0) return false;
+        const rows = await neon`SELECT user_id, is_demo FROM notices WHERE id = ${id} LIMIT 1;`;
+        if (!rows || rows.length === 0) return false;
 
-        const row = check[0];
-        if (row.is_demo) {
-          return false; // Cannot delete public demo notices
+        const notice = rows[0];
+        if (notice.is_demo) {
+          return false; // Forbid deleting shared demo notice
         }
-        if (!userId || (row.user_id && row.user_id !== userId)) {
+        if (notice.user_id !== userId) {
           return false; // Unauthorized
         }
 
         await neon`DELETE FROM events WHERE notice_id = ${id};`;
         await neon`DELETE FROM notices WHERE id = ${id};`;
         return true;
-      } catch (e: any) {
-        console.error('Neon deleteNotice failed:', e);
+      } catch (err: any) {
+        console.error('Neon deleteNotice failed:', err);
         if (isProduction) {
-          throw new Error(`Database delete failed: ${e.message}`);
+          throw new Error(`Database delete failed: ${err.message}`);
         }
       }
     } else if (isProduction) {
@@ -296,8 +318,9 @@ export class NoticeStore {
 
     const data = ensureDataFile();
     const notice = data.notices.find(n => n.id === id);
-    if (!notice || notice.isDemo) return false;
-    if (userId && notice.userId && notice.userId !== userId) return false;
+    if (!notice) return false;
+    if (notice.isDemo) return false;
+    if (notice.userId !== userId) return false;
 
     data.notices = data.notices.filter(n => n.id !== id);
     data.events = data.events.filter(e => e.noticeId !== id);
@@ -306,7 +329,7 @@ export class NoticeStore {
   }
 
   /**
-   * Saves or updates events for a notice in Neon PostgreSQL
+   * Saves a collection of extracted events
    */
   static async saveEvents(events: ExtractedEvent[], userId?: string): Promise<ExtractedEvent[]> {
     if (events.length === 0) return [];
@@ -315,20 +338,20 @@ export class NoticeStore {
     if (neon) {
       try {
         for (const ev of events) {
-          const ownerId = ev.userId || userId || null;
           await neon`
             INSERT INTO events (
-              id, notice_id, user_id, title, category, kind, date, start_time, end_time, deadline_time, 
-              venue, department_or_audience, source_text_evidence, confidence, 
-              review_required, review_reasons, is_confirmed, timezone
-            )
-            VALUES (
+              id, notice_id, user_id, title, category, kind, item_type, date, 
+              start_time, end_time, deadline_time, venue, department_or_audience, 
+              source_text_evidence, confidence, review_required, review_reasons, 
+              is_confirmed, timezone
+            ) VALUES (
               ${ev.id},
               ${ev.noticeId || null},
-              ${ownerId},
+              ${ev.userId || userId || null},
               ${ev.title},
               ${ev.category},
-              ${ev.kind},
+              ${ev.kind || 'timed_event'},
+              ${ev.kind || 'timed_event'},
               ${ev.date},
               ${ev.startTime || null},
               ${ev.endTime || null},
@@ -336,7 +359,7 @@ export class NoticeStore {
               ${ev.venue || null},
               ${ev.departmentOrAudience || null},
               ${ev.sourceTextEvidence},
-              ${ev.confidence},
+              ${ev.confidence || 0.90},
               ${ev.reviewRequired},
               ${JSON.stringify(ev.reviewReasons || [])}::jsonb,
               ${ev.isConfirmed},
@@ -346,6 +369,7 @@ export class NoticeStore {
               title = EXCLUDED.title,
               category = EXCLUDED.category,
               kind = EXCLUDED.kind,
+              item_type = EXCLUDED.item_type,
               date = EXCLUDED.date,
               start_time = EXCLUDED.start_time,
               end_time = EXCLUDED.end_time,
@@ -414,7 +438,9 @@ export class NoticeStore {
   }
 
   /**
-   * Retrieves all confirmed events (for master schedule and .ics export)
+   * Retrieves all confirmed events:
+   * - Authenticated: ONLY user's confirmed events
+   * - Anonymous: ONLY demo notice events
    */
   static async getAllConfirmedEvents(userId?: string): Promise<ExtractedEvent[]> {
     const neon = getNeonClient();
@@ -428,11 +454,10 @@ export class NoticeStore {
                    source_text_evidence, confidence, review_required, review_reasons,
                    is_confirmed, timezone, created_at, updated_at
             FROM events
-            WHERE is_confirmed = true AND (user_id = ${userId} OR notice_id = 'demo-notice-ps02')
+            WHERE is_confirmed = true AND user_id = ${userId}
             ORDER BY date ASC, start_time ASC;
           `;
         } else {
-          // Anonymous visitor: ONLY sample demo confirmed events
           rows = await neon`
             SELECT id, notice_id, user_id, title, category, kind, date::text as date_str,
                    start_time, end_time, deadline_time, venue, department_or_audience,
@@ -457,7 +482,7 @@ export class NoticeStore {
     const data = ensureDataFile();
     let events = data.events.filter(e => e.isConfirmed);
     if (userId) {
-      events = events.filter(e => e.userId === userId || e.noticeId === 'demo-notice-ps02');
+      events = events.filter(e => e.userId === userId);
     } else {
       events = events.filter(e => e.noticeId === 'demo-notice-ps02');
     }
@@ -570,13 +595,109 @@ export class NoticeStore {
   }
 
   /**
-   * Seeds clearly labeled Sample Demonstration Data
+   * Retrieves persistent user preferences from Neon PostgreSQL
+   */
+  static async getUserPreferences(userId: string): Promise<UserPreferences> {
+    const defaultPrefs: UserPreferences = {
+      userId,
+      timezone: 'Asia/Kolkata',
+      reminderLeadTimeMinutes: 30,
+      notificationPreferences: {
+        email: false,
+        calendar: true,
+        push: false,
+      },
+    };
+
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        const rows = await neon`
+          SELECT user_id, timezone, reminder_lead_time_minutes, notification_preferences, updated_at
+          FROM user_preferences
+          WHERE user_id = ${userId}
+          LIMIT 1;
+        `;
+        if (rows && rows.length > 0) {
+          const r = rows[0];
+          return {
+            userId: String(r.user_id),
+            timezone: r.timezone || 'Asia/Kolkata',
+            reminderLeadTimeMinutes: Number(r.reminder_lead_time_minutes) || 30,
+            notificationPreferences: typeof r.notification_preferences === 'string'
+              ? JSON.parse(r.notification_preferences)
+              : (r.notification_preferences || defaultPrefs.notificationPreferences),
+            updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : undefined,
+          };
+        }
+      } catch (err: any) {
+        console.warn('Neon getUserPreferences warning:', err.message);
+      }
+    }
+
+    const data = ensureDataFile();
+    return data.userPreferences?.[userId] || defaultPrefs;
+  }
+
+  /**
+   * Saves persistent user preferences to Neon PostgreSQL
+   */
+  static async saveUserPreferences(userId: string, prefs: Partial<UserPreferences>): Promise<UserPreferences> {
+    const current = await this.getUserPreferences(userId);
+    const merged: UserPreferences = {
+      ...current,
+      ...prefs,
+      userId,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        await neon`
+          INSERT INTO user_preferences (
+            user_id, timezone, reminder_lead_time_minutes, notification_preferences, updated_at
+          ) VALUES (
+            ${userId},
+            ${merged.timezone},
+            ${merged.reminderLeadTimeMinutes},
+            ${JSON.stringify(merged.notificationPreferences)}::jsonb,
+            CURRENT_TIMESTAMP
+          )
+          ON CONFLICT (user_id) DO UPDATE SET
+            timezone = EXCLUDED.timezone,
+            reminder_lead_time_minutes = EXCLUDED.reminder_lead_time_minutes,
+            notification_preferences = EXCLUDED.notification_preferences,
+            updated_at = CURRENT_TIMESTAMP;
+        `;
+      } catch (err: any) {
+        console.warn('Neon saveUserPreferences warning:', err.message);
+      }
+    }
+
+    const data = ensureDataFile();
+    if (!data.userPreferences) data.userPreferences = {};
+    data.userPreferences[userId] = merged;
+    writeDataFile(data);
+    return merged;
+  }
+
+  /**
+   * Seeds clearly labeled Sample Demonstration Data for optional demo mode
    */
   static async seedDemoData(): Promise<void> {
     const demoNoticeId = 'demo-notice-ps02';
     const demoNotice: NoticeRecord = {
       id: demoNoticeId,
       title: '[Sample] Academic Schedule & Lab Circular (November 2026)',
+      documentType: 'academic_schedule',
+      summary: 'Department circular announcing Internal Test 2, Lab Record submission deadline, and AI in Healthcare guest lecture.',
+      keyInformation: [
+        'Internal Test 2 is mandatory for all III-year CSE students.',
+        'Lab record submission must be completed before 12:00 noon.',
+        'Guest lecture will be conducted by visiting industry expert in Seminar Hall.'
+      ],
+      actionableItemsCount: 3,
       rawText: `All III-year CSE students: Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204. Lab records must be submitted to the department office by 12:00 noon on 13 Nov. A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.`,
       fileName: 'Academic_Circular_Sample.pdf',
       fileType: 'pdf',

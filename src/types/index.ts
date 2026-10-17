@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export type DocumentType = 
+  | 'academic_schedule' 
+  | 'office_communication' 
+  | 'meeting_minutes' 
+  | 'event_conference' 
+  | 'job_recruitment' 
+  | 'government_public' 
+  | 'general_advisory' 
+  | 'other';
+
 export type EventCategory = 
   | 'exam' 
   | 'lecture' 
@@ -8,9 +18,13 @@ export type EventCategory =
   | 'meeting' 
   | 'submission'
   | 'holiday' 
+  | 'job_interview'
+  | 'conference'
+  | 'public_filing'
+  | 'task'
   | 'other';
 
-export type EventKind = 'timed_event' | 'deadline_point';
+export type EventKind = 'timed_event' | 'deadline_point' | 'action_task' | 'info_point';
 
 export type ConflictSeverity = 'critical' | 'warning' | 'clean';
 
@@ -66,14 +80,40 @@ export interface ConflictRecord {
   suggestedAction: string;
 }
 
+export interface DocumentAnalysisResult {
+  documentType: DocumentType;
+  documentTitle: string;
+  summary: string;
+  keyInformation: string[];
+  hasActionableDates: boolean;
+  extractedItems: ExtractedEvent[];
+}
+
+export interface UserPreferences {
+  userId: string;
+  timezone: string;
+  reminderLeadTimeMinutes: number;
+  notificationPreferences: {
+    email: boolean;
+    calendar: boolean;
+    push: boolean;
+  };
+  updatedAt?: string;
+}
+
 export interface NoticeRecord {
   id: string;
   userId?: string;
   title: string;
+  documentType?: DocumentType;
+  summary?: string;
+  keyInformation?: string[];
+  actionableItemsCount?: number;
   rawText: string;
   fileName?: string;
   fileType: 'pdf' | 'image' | 'text';
   fileSize?: number;
+  storagePath?: string;
   status: 'pending' | 'processing' | 'extracted' | 'confirmed' | 'failed';
   errorMessage?: string;
   extractedEventsCount: number;
@@ -88,8 +128,11 @@ export const ExtractedEventSchema = z.object({
   id: z.string().optional(),
   noticeId: z.string().optional(),
   title: z.string().min(1, 'Event title is required'),
-  category: z.enum(['exam', 'lecture', 'deadline', 'workshop', 'meeting', 'submission', 'holiday', 'other']),
-  kind: z.enum(['timed_event', 'deadline_point']),
+  category: z.enum([
+    'exam', 'lecture', 'deadline', 'workshop', 'meeting', 'submission', 
+    'holiday', 'job_interview', 'conference', 'public_filing', 'task', 'other'
+  ]),
+  kind: z.enum(['timed_event', 'deadline_point', 'action_task', 'info_point']),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Start time must be HH:mm').nullable(),
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'End time must be HH:mm').nullable(),
@@ -114,3 +157,4 @@ export const NoticeUploadSchema = z.object({
   text: z.string().max(100000).optional(),
   isDemo: z.boolean().optional(),
 });
+
