@@ -29,33 +29,33 @@ export const LandingView: React.FC<LandingViewProps> = ({
   onNavigate,
 }) => {
   return (
-    <div className="space-y-20 pb-20">
+    <div className="space-y-12 sm:space-y-16 lg:space-y-20 pb-16 sm:pb-20">
       
       {/* 1. Hero Section with 3D Notice Transformation */}
-      <section className="relative overflow-hidden bg-white border border-slate-200/80 pt-12 pb-16 px-6 sm:px-10 lg:px-12 rounded-3xl shadow-xs">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      <section className="relative overflow-hidden bg-white border border-slate-200/80 pt-8 sm:pt-12 pb-10 sm:pb-16 px-4 sm:px-8 lg:px-12 rounded-3xl shadow-xs">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           
           {/* Left Column: Editorial Value Proposition & Actions */}
           <motion.div 
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="lg:col-span-7 space-y-6 text-left"
+            className="lg:col-span-7 space-y-5 sm:space-y-6 text-left min-w-0"
           >
-            <div className="inline-flex items-center space-x-2 bg-brand-50/80 border border-brand-200/80 text-brand-800 text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></span>
-              <span>Turn Any Document into Clear, Actionable Information.</span>
+            <div className="inline-flex items-center space-x-2 bg-brand-50/80 border border-brand-200/80 text-brand-800 text-[11px] sm:text-xs font-semibold px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full shadow-2xs max-w-full">
+              <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse shrink-0"></span>
+              <span className="truncate">Turn Any Document into Clear, Actionable Information.</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
+            <h1 className="text-[clamp(1.85rem,4.5vw,3.75rem)] font-extrabold text-slate-900 tracking-tight leading-[1.14] break-words">
               Turn any document into a <span className="text-brand-600 underline decoration-brand-200 decoration-wavy">clear plan.</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-xl">
+            <p className="text-sm sm:text-base lg:text-lg text-slate-600 font-normal leading-relaxed max-w-xl">
               Extract important dates, deadlines, tasks and directives from academic circulars, office memos, meeting minutes, interview calls, conference announcements, and public advisories. Notice Decoder converts unstructured documents into verified, calendar-ready schedules and key information summaries.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 w-full sm:w-auto">
               <button
                 onClick={() => onNavigate('notices')}
                 className="inline-flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-semibold px-6 py-3.5 rounded-xl shadow-sm hover:shadow transition-all text-sm group"
@@ -74,7 +74,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </div>
 
             {/* Credibility checkpoints without absolute/unverified claims */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
+            <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
               <span className="flex items-center space-x-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>Review extracted details</span>
@@ -95,11 +95,11 @@ export const LandingView: React.FC<LandingViewProps> = ({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-            className="lg:col-span-5 relative"
+            className="lg:col-span-5 relative w-full min-w-0"
           >
-            <div className="bg-gradient-to-br from-slate-50 via-white to-brand-50/40 rounded-2xl border border-slate-200/80 p-2 shadow-2xs min-h-[380px] flex items-center justify-center">
+            <div className="bg-gradient-to-br from-slate-50 via-white to-brand-50/40 rounded-2xl border border-slate-200/80 p-2 shadow-2xs min-h-[260px] sm:min-h-[340px] lg:min-h-[380px] flex items-center justify-center overflow-hidden">
               <React.Suspense fallback={
-                <div className="h-[380px] w-full flex flex-col items-center justify-center text-xs text-slate-400 space-y-2">
+                <div className="h-[260px] sm:h-[340px] w-full flex flex-col items-center justify-center text-xs text-slate-400 space-y-2">
                   <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
                   <span>Loading transformation scene...</span>
                 </div>
@@ -114,18 +114,18 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
       {/* 2. General-Purpose 5-Step Document-to-Action Workflow */}
       <section className="max-w-7xl mx-auto">
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-xs space-y-8">
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-8 lg:p-10 shadow-xs space-y-6 sm:space-y-8">
           
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-slate-100 pb-8">
-            <div className="space-y-3 max-w-2xl text-left">
-              <div className="inline-flex items-center space-x-2 bg-brand-50 border border-brand-200 text-brand-800 text-xs font-semibold px-3 py-1 rounded-full">
-                <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-                <span>AI-Powered Document Understanding</span>
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-slate-100 pb-6 sm:pb-8">
+            <div className="space-y-2.5 sm:space-y-3 max-w-2xl text-left min-w-0">
+              <div className="inline-flex items-center space-x-2 bg-brand-50 border border-brand-200 text-brand-800 text-[11px] sm:text-xs font-semibold px-3 py-1 rounded-full max-w-full">
+                <Sparkles className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                <span className="truncate">AI-Powered Document Understanding</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight break-words">
                 Turn Any Document into Clear, Actionable Information.
               </h2>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
                 Extract important information, summarize key points, identify tasks and deadlines, and detect scheduling conflicts when dates or events are present.
               </p>
             </div>

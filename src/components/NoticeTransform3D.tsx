@@ -271,31 +271,31 @@ export const NoticeTransform3D: React.FC<NoticeTransform3DProps> = ({ className 
   // CSS/SVG Fallback for environments without WebGL
   if (!hasWebGL) {
     return (
-      <div className={`relative flex items-center justify-center p-6 bg-slate-900 rounded-2xl border border-slate-800 ${className}`}>
-        <div className="flex items-center space-x-6">
-          <div className="w-28 h-36 bg-slate-100 rounded-lg shadow-md p-3 flex flex-col justify-between border border-slate-300">
+      <div className={`relative flex items-center justify-center p-4 sm:p-6 bg-slate-900 rounded-2xl border border-slate-800 max-w-full overflow-hidden ${className}`}>
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:space-x-6">
+          <div className="w-24 sm:w-28 h-32 sm:h-36 bg-slate-100 rounded-lg shadow-md p-3 flex flex-col justify-between border border-slate-300 shrink-0">
             <div className="w-12 h-2 bg-navy-900 rounded"></div>
             <div className="space-y-1">
               <div className="w-full h-1.5 bg-slate-300 rounded"></div>
               <div className="w-4/5 h-1.5 bg-slate-300 rounded"></div>
               <div className="w-3/5 h-1.5 bg-slate-300 rounded"></div>
             </div>
-            <div className="text-[9px] font-mono font-bold text-slate-500">NOTICE</div>
+            <div className="text-[9px] font-mono font-bold text-slate-500">DOCUMENT</div>
           </div>
 
-          <div className="text-brand-400 font-bold text-xl">&rarr;</div>
+          <div className="text-brand-400 font-bold text-lg rotate-90 sm:rotate-0">&rarr;</div>
 
-          <div className="space-y-2">
-            <div className="w-36 bg-navy-900 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-brand-400" />
+          <div className="space-y-2 w-full sm:w-auto">
+            <div className="w-full sm:w-36 bg-navy-900 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-brand-400 shrink-0" />
               <span>Priority Event</span>
             </div>
-            <div className="w-36 bg-blue-600 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
-              <Calendar className="w-3.5 h-3.5 text-blue-200" />
+            <div className="w-full sm:w-36 bg-blue-600 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
+              <Calendar className="w-3.5 h-3.5 text-blue-200 shrink-0" />
               <span>Session / Talk</span>
             </div>
-            <div className="w-36 bg-emerald-600 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
+            <div className="w-full sm:w-36 bg-emerald-600 text-white p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
               <span>Action Deadline</span>
             </div>
           </div>
@@ -305,14 +305,14 @@ export const NoticeTransform3D: React.FC<NoticeTransform3DProps> = ({ className 
   }
 
   return (
-    <div className={`relative w-full h-[320px] sm:h-[380px] lg:h-[420px] flex items-center justify-center ${className}`}>
+    <div className={`relative w-full h-[260px] sm:h-[340px] lg:h-[400px] flex items-center justify-center max-w-full overflow-hidden ${className}`}>
       {/* 3D Canvas Mount Point */}
-      <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+      <div ref={mountRef} className="w-full h-full max-w-full cursor-grab active:cursor-grabbing overflow-hidden" />
 
       {/* Floating Interactive Badge */}
-      <div className="absolute bottom-3 left-4 right-4 sm:left-auto sm:right-4 flex items-center justify-center space-x-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-[11px] text-slate-600 pointer-events-none">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>Interactive 3D Transformation: Notice &rarr; Confirmed Schedule</span>
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:left-auto sm:right-4 flex items-center justify-center space-x-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200 shadow-xs text-[10px] sm:text-[11px] text-slate-600 pointer-events-none max-w-[calc(100%-20px)] truncate">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+        <span className="truncate">Interactive 3D: Document &rarr; Schedule</span>
       </div>
     </div>
   );

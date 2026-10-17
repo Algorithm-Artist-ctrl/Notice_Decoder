@@ -207,22 +207,24 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 w-full overflow-x-clip">
       
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-5 right-5 z-50 animate-bounce-once">
-          <div className={`flex items-center space-x-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold ${
+        <div className="fixed bottom-4 sm:bottom-5 left-4 right-4 sm:left-auto sm:right-5 z-50 animate-bounce-once max-w-sm">
+          <div className={`flex items-center justify-between space-x-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold ${
             toast.type === 'success' 
               ? 'bg-emerald-900 text-emerald-100 border-emerald-700' 
               : toast.type === 'error'
                 ? 'bg-red-900 text-red-100 border-red-700'
                 : 'bg-navy-900 text-slate-100 border-navy-700'
           }`}>
-            {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-            {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
-            <span>{toast.message}</span>
-            <button onClick={() => setToast(null)} className="ml-2 hover:opacity-75">
+            <div className="flex items-center space-x-2 min-w-0">
+              {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+              {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
+              <span className="truncate sm:whitespace-normal">{toast.message}</span>
+            </div>
+            <button onClick={() => setToast(null)} className="ml-2 hover:opacity-75 shrink-0" aria-label="Dismiss notification">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -241,7 +243,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content View Switcher */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {currentTab === 'landing' && (
           <LandingView
             onNavigate={(tab) => navigateToTab(tab)}

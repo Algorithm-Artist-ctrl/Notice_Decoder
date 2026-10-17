@@ -165,28 +165,28 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         </div>
 
         {/* Tab Switcher: File Upload vs Direct Text */}
-        <div className="flex border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row border-b border-slate-200 gap-1 sm:gap-0">
           <button
             onClick={() => { setActiveTab('file'); setErrorMessage(null); }}
-            className={`pb-3 px-4 text-xs font-semibold transition border-b-2 flex items-center space-x-2 ${
+            className={`pb-2.5 sm:pb-3 px-3 sm:px-4 text-xs font-semibold transition border-b-2 flex items-center justify-center sm:justify-start space-x-2 ${
               activeTab === 'file'
                 ? 'border-brand-600 text-brand-700'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            <UploadCloud className="w-4 h-4" />
-            <span>Upload Document / Scan (PDF, PNG, JPG)</span>
+            <UploadCloud className="w-4 h-4 shrink-0" />
+            <span className="truncate">Upload Document / Scan (PDF, Image)</span>
           </button>
           <button
             onClick={() => { setActiveTab('text'); setErrorMessage(null); }}
-            className={`pb-3 px-4 text-xs font-semibold transition border-b-2 flex items-center space-x-2 ${
+            className={`pb-2.5 sm:pb-3 px-3 sm:px-4 text-xs font-semibold transition border-b-2 flex items-center justify-center sm:justify-start space-x-2 ${
               activeTab === 'text'
                 ? 'border-brand-600 text-brand-700'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            <FileText className="w-4 h-4" />
-            <span>Paste Document Text (Email, Memo, Circular)</span>
+            <FileText className="w-4 h-4 shrink-0" />
+            <span className="truncate">Paste Document Text</span>
           </button>
         </div>
 

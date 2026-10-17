@@ -109,15 +109,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
       </div>
 
       {/* 1. User & Schedule Preferences (Persisted to PostgreSQL) */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center space-x-2 text-slate-900 font-bold text-sm">
-            <Globe className="w-4 h-4 text-brand-600" />
+            <Globe className="w-4 h-4 text-brand-600 shrink-0" />
             <h2>Schedule & Notification Preferences</h2>
           </div>
           {saveSuccessMsg && (
-            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1 animate-fade-in">
-              <CheckCircle2 className="w-3.5 h-3.5" />
+            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1 animate-fade-in self-start sm:self-auto">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               <span>{saveSuccessMsg}</span>
             </span>
           )}
@@ -333,7 +333,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
               Provider: <code className="font-mono font-semibold text-brand-700">{healthData?.system?.aiExtraction?.provider || 'Loading...'}</code>
             </p>
             <p className="text-slate-500 text-[11px]">
-              Accuracy Baseline: <strong>Validated against structured academic circular test suites</strong>.
+              Accuracy Baseline: <strong>Validated against multi-domain document test suites</strong>.
             </p>
           </div>
 

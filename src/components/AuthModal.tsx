@@ -37,7 +37,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg(null);
 
     if (!email || !email.includes('@')) {
-      setError('Please enter a valid academic or personal email address.');
+      setError('Please enter a valid email address.');
       return;
     }
 
@@ -100,14 +100,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-navy-950/60 backdrop-blur-xs animate-in fade-in duration-150">
       <div 
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col"
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-navy-900 via-navy-800 to-brand-900 p-6 text-white relative">
+        <div className="bg-gradient-to-r from-navy-900 via-navy-800 to-brand-900 p-5 sm:p-6 text-white relative shrink-0">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
@@ -120,9 +120,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <Lock className="w-5 h-5 text-brand-300" />
           </div>
 
-          <h2 className="text-xl font-bold tracking-tight">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight">
             {mode === 'sign-in' && 'Welcome back to Notice Decoder'}
-            {mode === 'sign-up' && 'Create your Academic Account'}
+            {mode === 'sign-up' && 'Create your Account'}
             {mode === 'forgot-password' && 'Reset your Password'}
             {mode === 'reset-password' && 'Enter New Password'}
           </h2>
@@ -161,7 +161,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="flex items-start space-x-2.5 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
               <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />

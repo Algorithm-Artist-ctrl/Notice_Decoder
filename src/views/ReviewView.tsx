@@ -163,10 +163,10 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handleAddNewEvent}
-            className="inline-flex items-center space-x-1.5 text-xs font-medium px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 transition"
+            className="inline-flex items-center justify-center space-x-1.5 text-xs font-medium px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 transition"
           >
             <Plus className="w-3.5 h-3.5 text-slate-600" />
             <span>Add Event</span>
@@ -175,24 +175,24 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
           <button
             onClick={handleSaveAndConfirm}
             disabled={isSaving}
-            className="inline-flex items-center space-x-2 text-xs font-bold px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition disabled:opacity-50"
+            className="inline-flex items-center justify-center space-x-2 text-xs font-bold px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{isSaving ? 'Saving...' : events.length === 0 ? 'Confirm & Save Document' : 'Confirm & Save Schedule'}</span>
+            <span>{isSaving ? 'Saving...' : events.length === 0 ? 'Confirm & Save' : 'Confirm & Save Schedule'}</span>
           </button>
         </div>
       </div>
 
       {/* Live Conflict Warning Pill if edits created or resolved conflicts */}
       {liveConflictAnalysis.hasConflicts && (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-center justify-between text-xs">
+        <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
           <div className="flex items-center space-x-2 text-red-900">
             <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
             <span>
               <strong>Deterministic Check:</strong> {liveConflictAnalysis.hardOverlapsCount} hard overlaps & {liveConflictAnalysis.deadlineWarningsCount} deadline alerts detected in current review.
             </span>
           </div>
-          <span className="text-red-700 font-mono font-semibold">
+          <span className="text-red-700 font-mono font-semibold self-start sm:self-auto shrink-0">
             Real-time recalculated
           </span>
         </div>
@@ -202,7 +202,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Left Pane: Original Notice Evidence */}
-        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4 sticky top-24">
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4 lg:sticky lg:top-24 max-w-full min-w-0">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
               <FileText className="w-4 h-4 text-brand-600" />
@@ -345,7 +345,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
         </div>
 
         {/* Right Pane: Editable Event Cards */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 space-y-4 max-w-full min-w-0">
           
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">

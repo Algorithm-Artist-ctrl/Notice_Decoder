@@ -243,14 +243,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div className="space-y-2">
                 {conflicts.slice(0, 2).map((c) => (
-                  <div key={c.id} className="bg-white/80 p-3 rounded-xl border border-red-200 flex items-center justify-between text-xs">
-                    <div>
+                  <div key={c.id} className="bg-white/80 p-3 rounded-xl border border-red-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 text-xs">
+                    <div className="min-w-0">
                       <span className="font-bold text-red-950">
                         {c.type === 'HARD_OVERLAP' ? `[${c.overlapMinutes}m Overlap]` : '[Deadline Alert]'}
                       </span>{' '}
-                      <span className="text-slate-700">{c.explanation}</span>
+                      <span className="text-slate-700 break-words">{c.explanation}</span>
                     </div>
-                    <span className="text-[11px] font-mono text-red-600 font-semibold bg-red-100 px-2 py-0.5 rounded">
+                    <span className="text-[11px] font-mono text-red-600 font-semibold bg-red-100 px-2 py-0.5 rounded self-start sm:self-auto shrink-0">
                       {c.overlapStart}
                     </span>
                   </div>
@@ -280,21 +280,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div className="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 shadow-xs overflow-hidden">
                 {events.slice(0, 5).map((ev) => (
-                  <div key={ev.id} className="p-4 hover:bg-slate-50 transition flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                  <div key={ev.id} className="p-4 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 ${
                           ev.category === 'exam' ? 'bg-red-100 text-red-800' :
                           ev.category === 'deadline' ? 'bg-amber-100 text-amber-800' :
                           ev.category === 'lecture' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
                         }`}>
                           {ev.category}
                         </span>
-                        <h4 className="font-bold text-slate-900 text-sm">{ev.title}</h4>
+                        <h4 className="font-bold text-slate-900 text-sm break-words">{ev.title}</h4>
                       </div>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                         <span className="flex items-center space-x-1 font-mono">
-                          <Clock className="w-3 h-3 text-slate-400" />
+                          <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                           <span>
                             {ev.kind === 'deadline_point'
                               ? `Deadline: ${format12Hour(ev.deadlineTime)}`
@@ -303,13 +303,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         </span>
                         {ev.venue && (
                           <span className="flex items-center space-x-1">
-                            <MapPin className="w-3 h-3 text-slate-400" />
+                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                             <span>{ev.venue}</span>
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
+                    <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded self-start sm:self-auto shrink-0">
                       {ev.date}
                     </span>
                   </div>

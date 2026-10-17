@@ -57,24 +57,26 @@ export const ConflictsView: React.FC<ConflictsViewProps> = ({
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+        <div className="flex flex-wrap sm:flex-nowrap items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold gap-1 max-w-full">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-lg transition ${filter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}
+            className={`px-3 py-1.5 rounded-lg transition whitespace-nowrap ${filter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}
           >
-            All Alerts ({conflicts.length})
+            All ({conflicts.length})
           </button>
           <button
             onClick={() => setFilter('hard_overlap')}
-            className={`px-3 py-1.5 rounded-lg transition ${filter === 'hard_overlap' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600'}`}
+            className={`px-3 py-1.5 rounded-lg transition whitespace-nowrap ${filter === 'hard_overlap' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600'}`}
           >
-            Schedule Overlaps ({hardOverlapsCount})
+            <span className="sm:hidden">Overlaps</span>
+            <span className="hidden sm:inline">Schedule Overlaps</span> ({hardOverlapsCount})
           </button>
           <button
             onClick={() => setFilter('deadline')}
-            className={`px-3 py-1.5 rounded-lg transition ${filter === 'deadline' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600'}`}
+            className={`px-3 py-1.5 rounded-lg transition whitespace-nowrap ${filter === 'deadline' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600'}`}
           >
-            Deadline Alerts ({deadlineCount})
+            <span className="sm:hidden">Deadlines</span>
+            <span className="hidden sm:inline">Deadline Alerts</span> ({deadlineCount})
           </button>
         </div>
       </div>
@@ -144,7 +146,7 @@ export const ConflictsView: React.FC<ConflictsViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-left sm:text-right shrink-0">
                     <span className="text-xs font-mono font-bold text-slate-900 block">
                       {isHardOverlap ? `${c.overlapMinutes} Minutes Overlap` : 'Critical Time Collision'}
                     </span>
@@ -220,11 +222,11 @@ export const ConflictsView: React.FC<ConflictsViewProps> = ({
                 </div>
 
                 {/* Mathematical Proof Box */}
-                <div className="bg-slate-900 text-slate-200 p-4 rounded-xl font-mono text-xs space-y-1">
+                <div className="bg-slate-900 text-slate-200 p-4 rounded-xl font-mono text-xs space-y-1 overflow-x-auto max-w-full">
                   <div className="text-brand-300 font-bold text-[11px] uppercase tracking-wider">
                     // Deterministic Proof:
                   </div>
-                  <div className="text-slate-100">{c.mathProof}</div>
+                  <div className="text-slate-100 break-words">{c.mathProof}</div>
                   <div className="text-slate-400 text-[11px] pt-1">
                     Proof logic: Evaluated via half-open interval overlap algorithm.
                   </div>

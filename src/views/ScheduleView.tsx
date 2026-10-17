@@ -234,21 +234,21 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ events, onOpenNotice
 
           <div className="space-y-4">
             {filteredEvents.map((ev) => (
-              <div key={ev.id} className="border border-slate-200 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-mono font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">
+              <div key={ev.id} className="border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-mono font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded shrink-0">
                       {ev.date}
                     </span>
-                    <span className="font-bold text-slate-900 text-sm">{ev.title}</span>
+                    <span className="font-bold text-slate-900 text-sm break-words">{ev.title}</span>
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">
+                  <div className="text-xs text-slate-500 mt-1 break-words">
                     {ev.kind === 'deadline_point'
                       ? `Deadline at ${format12Hour(ev.deadlineTime || ev.startTime)}`
                       : `From ${format12Hour(ev.startTime)} to ${format12Hour(ev.endTime)}`} · {ev.venue || 'Campus'}
                   </div>
                 </div>
-                <span className="text-[10px] font-mono font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded">
+                <span className="text-[10px] font-mono font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded self-start sm:self-auto shrink-0">
                   {ev.kind.toUpperCase()}
                 </span>
               </div>

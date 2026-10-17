@@ -68,7 +68,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           {filteredNotices.map((n) => (
             <div key={n.id} className="p-5 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               
-              <div className="space-y-1.5 max-w-2xl">
+              <div className="space-y-1.5 max-w-2xl min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                     n.status === 'confirmed' 
@@ -99,7 +99,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                   </span>
                 </div>
 
-                <h3 className="font-bold text-slate-900 text-sm">{n.title}</h3>
+                <h3 className="font-bold text-slate-900 text-sm break-words">{n.title}</h3>
                 
                 {n.summary ? (
                   <p className="text-xs text-slate-600 line-clamp-2">
