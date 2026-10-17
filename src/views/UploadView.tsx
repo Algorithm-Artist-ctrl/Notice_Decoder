@@ -205,7 +205,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
             type="text"
             placeholder="e.g. III-Year CSE Internal Test 2 & Guest Lecture"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
             disabled={isProcessing}
             className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
           />
@@ -241,7 +241,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         {activeTab === 'file' && (
           <div className="space-y-4">
             <div
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragOver={(e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
@@ -257,7 +257,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.png,.jpg,.jpeg"
-                onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => e.target.files && handleFileSelect(e.target.files[0])}
                 className="hidden"
               />
 
@@ -274,7 +274,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
                   </div>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); setSelectedFile(null); }}
                     className="text-xs text-red-600 font-medium hover:underline"
                   >
                     Remove file
@@ -317,7 +317,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
               rows={7}
               placeholder="Paste the circular or notice text directly here..."
               value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRawText(e.target.value)}
               disabled={isProcessing}
               className="w-full text-xs font-mono p-3.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition leading-relaxed"
             />
