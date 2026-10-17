@@ -79,10 +79,21 @@ function mapRowToNotice(r: any, eventCount = 0): NoticeRecord {
     userId: r.user_id ? String(r.user_id) : undefined,
     title: String(r.title),
     documentType: (r.document_type || 'general_advisory') as DocumentType,
+    documentDomain: r.document_domain || 'general',
+    analysisCase: r.analysis_case || 'E',
     summary: r.summary ? String(r.summary) : undefined,
     keyInformation: Array.isArray(r.key_information)
       ? r.key_information
       : (typeof r.key_information === 'string' ? JSON.parse(r.key_information) : []),
+    directives: Array.isArray(r.directives)
+      ? r.directives
+      : (typeof r.directives === 'string' ? JSON.parse(r.directives) : []),
+    requiredActions: Array.isArray(r.required_actions)
+      ? r.required_actions
+      : (typeof r.required_actions === 'string' ? JSON.parse(r.required_actions) : []),
+    contactsOrReferences: Array.isArray(r.contacts_references)
+      ? r.contacts_references
+      : (typeof r.contacts_references === 'string' ? JSON.parse(r.contacts_references) : []),
     actionableItemsCount: Number(r.actionable_items_count) || eventCount,
     rawText: String(r.raw_text),
     fileName: r.file_name ? String(r.file_name) : undefined,
@@ -113,7 +124,8 @@ export class NoticeStore {
         await neon`
           INSERT INTO notices (
             id, user_id, title, raw_text, file_name, file_type, file_size, status, error_message, is_demo, 
-            document_type, summary, key_information, actionable_items_count, storage_path, created_at, updated_at
+            document_type, document_domain, analysis_case, summary, key_information, directives, required_actions, 
+            contacts_references, actionable_items_count, storage_path, created_at, updated_at
           ) VALUES (
             ${notice.id}, 
             ${notice.userId || null}, 
@@ -125,9 +137,14 @@ export class NoticeStore {
             ${notice.status}, 
             ${notice.errorMessage || null}, 
             ${Boolean(notice.isDemo)}, 
-            ${notice.documentType || 'general_document'},
+            ${notice.documentType || 'general_advisory'},
+            ${notice.documentDomain || 'general'},
+            ${notice.analysisCase || 'E'},
             ${notice.summary || null},
             ${JSON.stringify(notice.keyInformation || [])}::jsonb,
+            ${JSON.stringify(notice.directives || [])}::jsonb,
+            ${JSON.stringify(notice.requiredActions || [])}::jsonb,
+            ${JSON.stringify(notice.contactsOrReferences || [])}::jsonb,
             ${notice.actionableItemsCount || 0},
             ${notice.storagePath || null},
             ${notice.createdAt}, 
@@ -138,8 +155,13 @@ export class NoticeStore {
             status = EXCLUDED.status,
             error_message = EXCLUDED.error_message,
             document_type = EXCLUDED.document_type,
+            document_domain = EXCLUDED.document_domain,
+            analysis_case = EXCLUDED.analysis_case,
             summary = EXCLUDED.summary,
             key_information = EXCLUDED.key_information,
+            directives = EXCLUDED.directives,
+            required_actions = EXCLUDED.required_actions,
+            contacts_references = EXCLUDED.contacts_references,
             actionable_items_count = EXCLUDED.actionable_items_count,
             storage_path = EXCLUDED.storage_path,
             updated_at = EXCLUDED.updated_at;
@@ -168,35 +190,26 @@ export class NoticeStore {
 
   /**
    * Retrieves notices with strict user isolation:
-   * - Authenticated user: returns ONLY their owned notices (never mixes demo notices automatically)
-   * - Anonymous user: returns ONLY public demo sandbox notices
+   * - Authenticated or session user: returns ONLY their owned notices
+   * - Empty / unauthenticated visitor with no session: returns [] (clean slate, zero mock data)
    */
   static async listNotices(userId?: string): Promise<NoticeRecord[]> {
+    if (!userId) {
+      return [];
+    }
+
     const neon = getNeonClient();
     if (neon) {
       try {
-        let rows: any[] = [];
-        if (userId) {
-          rows = await neon`
-            SELECT n.*, 
-                   COUNT(DISTINCT e.id)::int as extracted_events_count
-            FROM notices n
-            LEFT JOIN events e ON e.notice_id = n.id
-            WHERE n.user_id = ${userId}
-            GROUP BY n.id
-            ORDER BY n.created_at DESC;
-          `;
-        } else {
-          rows = await neon`
-            SELECT n.*, 
-                   COUNT(DISTINCT e.id)::int as extracted_events_count
-            FROM notices n
-            LEFT JOIN events e ON e.notice_id = n.id
-            WHERE n.is_demo = TRUE
-            GROUP BY n.id
-            ORDER BY n.created_at DESC;
-          `;
-        }
+        const rows = await neon`
+          SELECT n.*, 
+                 COUNT(DISTINCT e.id)::int as extracted_events_count
+          FROM notices n
+          LEFT JOIN events e ON e.notice_id = n.id
+          WHERE n.user_id = ${userId}
+          GROUP BY n.id
+          ORDER BY n.created_at DESC;
+        `;
 
         return rows.map(r => mapRowToNotice(r, Number(r.extracted_events_count) || 0));
       } catch (err: any) {
@@ -210,12 +223,7 @@ export class NoticeStore {
     }
 
     const data = ensureDataFile();
-    let filtered = data.notices;
-    if (userId) {
-      filtered = filtered.filter(n => n.userId === userId);
-    } else {
-      filtered = filtered.filter(n => n.isDemo);
-    }
+    const filtered = data.notices.filter(n => n.userId === userId);
 
     return filtered.map(n => {
       const noticeEvents = data.events.filter(e => e.noticeId === n.id);
@@ -439,35 +447,26 @@ export class NoticeStore {
 
   /**
    * Retrieves all confirmed events:
-   * - Authenticated: ONLY user's confirmed events
-   * - Anonymous: ONLY demo notice events
+   * - Authenticated / session user: returns ONLY user's confirmed events
+   * - Empty / unauthenticated visitor with no session: returns [] (clean slate)
    */
   static async getAllConfirmedEvents(userId?: string): Promise<ExtractedEvent[]> {
+    if (!userId) {
+      return [];
+    }
+
     const neon = getNeonClient();
     if (neon) {
       try {
-        let rows: any[] = [];
-        if (userId) {
-          rows = await neon`
-            SELECT id, notice_id, user_id, title, category, kind, date::text as date_str,
-                   start_time, end_time, deadline_time, venue, department_or_audience,
-                   source_text_evidence, confidence, review_required, review_reasons,
-                   is_confirmed, timezone, created_at, updated_at
-            FROM events
-            WHERE is_confirmed = true AND user_id = ${userId}
-            ORDER BY date ASC, start_time ASC;
-          `;
-        } else {
-          rows = await neon`
-            SELECT id, notice_id, user_id, title, category, kind, date::text as date_str,
-                   start_time, end_time, deadline_time, venue, department_or_audience,
-                   source_text_evidence, confidence, review_required, review_reasons,
-                   is_confirmed, timezone, created_at, updated_at
-            FROM events
-            WHERE is_confirmed = true AND notice_id = 'demo-notice-ps02'
-            ORDER BY date ASC, start_time ASC;
-          `;
-        }
+        const rows = await neon`
+          SELECT id, notice_id, user_id, title, category, kind, date::text as date_str,
+                 start_time, end_time, deadline_time, venue, department_or_audience,
+                 source_text_evidence, confidence, review_required, review_reasons,
+                 is_confirmed, timezone, created_at, updated_at
+          FROM events
+          WHERE is_confirmed = true AND user_id = ${userId}
+          ORDER BY date ASC, start_time ASC;
+        `;
         return rows.map(mapRowToEvent);
       } catch (err: any) {
         console.error('Neon getAllConfirmedEvents failed:', err);
@@ -480,13 +479,7 @@ export class NoticeStore {
     }
 
     const data = ensureDataFile();
-    let events = data.events.filter(e => e.isConfirmed);
-    if (userId) {
-      events = events.filter(e => e.userId === userId);
-    } else {
-      events = events.filter(e => e.noticeId === 'demo-notice-ps02');
-    }
-    return events;
+    return data.events.filter(e => e.isConfirmed && e.userId === userId);
   }
 
   /**

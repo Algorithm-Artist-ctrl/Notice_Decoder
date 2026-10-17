@@ -65,6 +65,18 @@ export async function testNeonConnection(): Promise<DatabaseStatus> {
       connectionTested = true;
       isConnected = true;
       lastError = undefined;
+
+      // Ensure platform extensions are present in Neon PostgreSQL
+      try {
+        await sqlClient`ALTER TABLE notices ADD COLUMN IF NOT EXISTS document_domain VARCHAR(64) DEFAULT 'general';`;
+        await sqlClient`ALTER TABLE notices ADD COLUMN IF NOT EXISTS analysis_case VARCHAR(8) DEFAULT 'E';`;
+        await sqlClient`ALTER TABLE notices ADD COLUMN IF NOT EXISTS directives JSONB DEFAULT '[]'::jsonb;`;
+        await sqlClient`ALTER TABLE notices ADD COLUMN IF NOT EXISTS required_actions JSONB DEFAULT '[]'::jsonb;`;
+        await sqlClient`ALTER TABLE notices ADD COLUMN IF NOT EXISTS contacts_references JSONB DEFAULT '[]'::jsonb;`;
+      } catch (colErr: any) {
+        console.warn('Neon schema check warning:', colErr.message);
+      }
+
       return {
         configured: true,
         connected: true,

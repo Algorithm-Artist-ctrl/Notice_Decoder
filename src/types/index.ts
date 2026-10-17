@@ -1,5 +1,17 @@
 import { z } from 'zod';
 
+export type DocumentDomain = 
+  | 'education' 
+  | 'business' 
+  | 'government' 
+  | 'finance' 
+  | 'healthcare' 
+  | 'events' 
+  | 'legal' 
+  | 'general';
+
+export type AnalysisCase = 'A' | 'B' | 'C' | 'D' | 'E';
+
 export type DocumentType = 
   | 'academic_schedule' 
   | 'office_communication' 
@@ -7,6 +19,9 @@ export type DocumentType =
   | 'event_conference' 
   | 'job_recruitment' 
   | 'government_public' 
+  | 'financial_notice'
+  | 'healthcare_advisory'
+  | 'legal_regulatory'
   | 'general_advisory' 
   | 'other';
 
@@ -21,6 +36,10 @@ export type EventCategory =
   | 'job_interview'
   | 'conference'
   | 'public_filing'
+  | 'hearing'
+  | 'appointment'
+  | 'payment_due'
+  | 'renewal'
   | 'task'
   | 'other';
 
@@ -80,11 +99,27 @@ export interface ConflictRecord {
   suggestedAction: string;
 }
 
+export interface RequiredActionItem {
+  task: string;
+  dueDate?: string;
+  status?: string;
+  action?: string;
+  assigneeOrTarget?: string;
+  deadline?: string;
+  priority?: 'low' | 'medium' | 'high';
+}
+
 export interface DocumentAnalysisResult {
   documentType: DocumentType;
+  documentDomain?: DocumentDomain;
+  analysisCase?: AnalysisCase;
   documentTitle: string;
   summary: string;
   keyInformation: string[];
+  directives?: string[];
+  requiredActions?: RequiredActionItem[];
+  contactsOrReferences?: string[];
+  isInformationalOnly?: boolean;
   hasActionableDates: boolean;
   extractedItems: ExtractedEvent[];
 }
@@ -101,20 +136,34 @@ export interface UserPreferences {
   updatedAt?: string;
 }
 
+export type DocumentLifecycleStatus = 
+  | 'pending' 
+  | 'uploaded' 
+  | 'processing' 
+  | 'extracted' 
+  | 'review_required' 
+  | 'confirmed' 
+  | 'failed';
+
 export interface NoticeRecord {
   id: string;
   userId?: string;
   title: string;
   documentType?: DocumentType;
+  documentDomain?: DocumentDomain;
+  analysisCase?: AnalysisCase;
   summary?: string;
   keyInformation?: string[];
+  directives?: string[];
+  requiredActions?: RequiredActionItem[];
+  contactsOrReferences?: string[];
   actionableItemsCount?: number;
   rawText: string;
   fileName?: string;
   fileType: 'pdf' | 'image' | 'text';
   fileSize?: number;
   storagePath?: string;
-  status: 'pending' | 'processing' | 'extracted' | 'confirmed' | 'failed';
+  status: DocumentLifecycleStatus;
   errorMessage?: string;
   extractedEventsCount: number;
   conflictsCount: number;
@@ -130,7 +179,8 @@ export const ExtractedEventSchema = z.object({
   title: z.string().min(1, 'Event title is required'),
   category: z.enum([
     'exam', 'lecture', 'deadline', 'workshop', 'meeting', 'submission', 
-    'holiday', 'job_interview', 'conference', 'public_filing', 'task', 'other'
+    'holiday', 'job_interview', 'conference', 'public_filing', 'hearing',
+    'appointment', 'payment_due', 'renewal', 'task', 'other'
   ]),
   kind: z.enum(['timed_event', 'deadline_point', 'action_task', 'info_point']),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),

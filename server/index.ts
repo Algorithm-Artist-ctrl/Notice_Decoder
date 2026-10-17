@@ -32,9 +32,19 @@ const app = new Hono();
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-request-id'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-request-id', 'x-session-id'],
   credentials: true,
 }));
+
+// Helper to resolve authenticated user or isolated anonymous guest session ID
+function resolveSessionUserId(c: any, user?: { id: string } | null): string | undefined {
+  if (user?.id) return user.id;
+  const headerSid = c.req.header('x-session-id');
+  if (headerSid && typeof headerSid === 'string' && headerSid.trim().length > 3) {
+    return `anon_${headerSid.trim().replace(/[^a-zA-Z0-9_\-]/g, '')}`;
+  }
+  return undefined;
+}
 
 // Global error handler: guarantees clean, structured JSON errors on any unhandled exception
 app.onError((err, c) => {
@@ -221,7 +231,8 @@ app.post('/api/auth/sign-out', async (c) => {
 app.get('/api/notices', async (c) => {
   try {
     const user = await verifySession(c);
-    const notices = await NoticeStore.listNotices(user?.id);
+    const sessionUserId = resolveSessionUserId(c, user);
+    const notices = await NoticeStore.listNotices(sessionUserId);
     return c.json({ success: true, data: notices });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -235,11 +246,12 @@ app.get('/api/notices/:id', async (c) => {
   try {
     const id = c.req.param('id');
     const user = await verifySession(c);
-    const notice = await NoticeStore.getNoticeById(id, user?.id);
+    const sessionUserId = resolveSessionUserId(c, user);
+    const notice = await NoticeStore.getNoticeById(id, sessionUserId);
     if (!notice) {
       return c.json({ success: false, error: 'Notice not found or unauthorized' }, 404);
     }
-    const events = await NoticeStore.getEventsByNoticeId(id, user?.id);
+    const events = await NoticeStore.getEventsByNoticeId(id, sessionUserId);
     return c.json({ success: true, data: { notice, events } });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -248,16 +260,17 @@ app.get('/api/notices/:id', async (c) => {
 
 /**
  * Delete notice:
- * Requires authentication and owner verification. Forbids deleting sample demo notices.
+ * Requires authentication or active session ownership.
  */
 app.delete('/api/notices/:id', async (c) => {
   try {
     const id = c.req.param('id');
     const user = await verifySession(c);
-    if (!user) {
-      return c.json({ success: false, error: 'Authentication required to delete notices' }, 401);
+    const sessionUserId = resolveSessionUserId(c, user);
+    if (!sessionUserId) {
+      return c.json({ success: false, error: 'Authentication or active session required to delete notices' }, 401);
     }
-    const success = await NoticeStore.deleteNotice(id, user.id);
+    const success = await NoticeStore.deleteNotice(id, sessionUserId);
     if (!success) {
       return c.json({ success: false, error: 'Notice not found, unauthorized, or sample notices cannot be deleted' }, 403);
     }
@@ -274,11 +287,12 @@ app.get('/api/notices/:id/events', async (c) => {
   try {
     const id = c.req.param('id');
     const user = await verifySession(c);
-    const notice = await NoticeStore.getNoticeById(id, user?.id);
+    const sessionUserId = resolveSessionUserId(c, user);
+    const notice = await NoticeStore.getNoticeById(id, sessionUserId);
     if (!notice) {
       return c.json({ success: false, error: 'Notice not found or unauthorized' }, 404);
     }
-    const events = await NoticeStore.getEventsByNoticeId(id, user?.id);
+    const events = await NoticeStore.getEventsByNoticeId(id, sessionUserId);
     return c.json({ success: true, data: events });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -292,8 +306,9 @@ app.patch('/api/events/:id', async (c) => {
   try {
     const id = c.req.param('id');
     const user = await verifySession(c);
+    const sessionUserId = resolveSessionUserId(c, user);
     const body = await c.req.json();
-    const updated = await NoticeStore.updateEvent(id, body, user?.id);
+    const updated = await NoticeStore.updateEvent(id, body, sessionUserId);
     if (!updated) {
       return c.json({ success: false, error: 'Event not found or unauthorized' }, 404);
     }
@@ -310,17 +325,18 @@ app.post('/api/notices/:id/confirm', async (c) => {
   try {
     const noticeId = c.req.param('id');
     const user = await verifySession(c);
-    const notice = await NoticeStore.getNoticeById(noticeId, user?.id);
+    const sessionUserId = resolveSessionUserId(c, user);
+    const notice = await NoticeStore.getNoticeById(noticeId, sessionUserId);
     if (!notice) {
       return c.json({ success: false, error: 'Notice not found or unauthorized' }, 404);
     }
 
-    const events = await NoticeStore.getEventsByNoticeId(noticeId, user?.id);
+    const events = await NoticeStore.getEventsByNoticeId(noticeId, sessionUserId);
     for (const ev of events) {
       ev.isConfirmed = true;
       ev.reviewRequired = false;
     }
-    await NoticeStore.saveEvents(events, user?.id);
+    await NoticeStore.saveEvents(events, sessionUserId);
 
     notice.status = 'confirmed';
     notice.updatedAt = new Date().toISOString();
@@ -338,7 +354,8 @@ app.post('/api/notices/:id/confirm', async (c) => {
 app.get('/api/schedule', async (c) => {
   try {
     const user = await verifySession(c);
-    const events = await NoticeStore.getAllConfirmedEvents(user?.id);
+    const sessionUserId = resolveSessionUserId(c, user);
+    const events = await NoticeStore.getAllConfirmedEvents(sessionUserId);
     // Sort chronologically by date then start_time
     events.sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
@@ -359,7 +376,8 @@ app.get('/api/conflicts', async (c) => {
   try {
     const noticeId = c.req.query('noticeId');
     const user = await verifySession(c);
-    const analysis = await NoticeStore.getConflictAnalysis(noticeId, user?.id);
+    const sessionUserId = resolveSessionUserId(c, user);
+    const analysis = await NoticeStore.getConflictAnalysis(noticeId, sessionUserId);
     return c.json({ success: true, data: analysis });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -488,23 +506,29 @@ app.post('/api/notices/upload', async (c) => {
       ? title.trim()
       : (analysis.documentTitle || 'Processed Document');
 
-    const noticeId = isDemo ? 'demo-notice-ps02' : `doc-${Date.now()}`;
+    const sessionUserId = resolveSessionUserId(c, user);
+    const noticeId = `doc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const notice: NoticeRecord = {
       id: noticeId,
-      userId: user?.id,
+      userId: sessionUserId,
       title: determinedTitle,
       documentType: analysis.documentType,
+      documentDomain: analysis.documentDomain,
+      analysisCase: analysis.analysisCase,
       summary: analysis.summary,
       keyInformation: analysis.keyInformation,
+      directives: analysis.directives,
+      requiredActions: analysis.requiredActions,
+      contactsOrReferences: analysis.contactsOrReferences,
       actionableItemsCount: analysis.extractedItems.length,
       rawText: rawText.trim(),
       fileName,
       fileType,
       fileSize,
-      status: 'extracted',
+      status: 'review_required',
       extractedEventsCount: analysis.extractedItems.length,
       conflictsCount: 0,
-      isDemo,
+      isDemo: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -512,13 +536,13 @@ app.post('/api/notices/upload', async (c) => {
     const events = analysis.extractedItems;
     for (const ev of events) {
       ev.noticeId = noticeId;
-      ev.userId = user?.id;
+      ev.userId = sessionUserId;
     }
 
     // 2. Save document & events to Neon PostgreSQL
     await NoticeStore.saveNotice(notice);
     if (events.length > 0) {
-      await NoticeStore.saveEvents(events, user?.id);
+      await NoticeStore.saveEvents(events, sessionUserId);
     }
 
     // 3. Archive binary asset to Neon Object Storage if uploaded
@@ -556,7 +580,7 @@ app.post('/api/notices/upload', async (c) => {
 app.get('/api/preferences', async (c) => {
   try {
     const user = await verifySession(c);
-    const userId = user?.id || 'anonymous';
+    const userId = resolveSessionUserId(c, user) || 'anonymous';
     const prefs = await NoticeStore.getUserPreferences(userId);
     return c.json({ success: true, data: prefs });
   } catch (err: any) {
@@ -570,7 +594,7 @@ app.get('/api/preferences', async (c) => {
 app.put('/api/preferences', async (c) => {
   try {
     const user = await verifySession(c);
-    const userId = user?.id || 'anonymous';
+    const userId = resolveSessionUserId(c, user) || 'anonymous';
     const body = await c.req.json();
     const updated = await NoticeStore.saveUserPreferences(userId, body);
     return c.json({ success: true, data: updated });
@@ -585,7 +609,8 @@ app.put('/api/preferences', async (c) => {
 app.get('/api/calendar/export', async (c) => {
   try {
     const user = await verifySession(c);
-    const events = await NoticeStore.getAllConfirmedEvents(user?.id);
+    const sessionUserId = resolveSessionUserId(c, user);
+    const events = await NoticeStore.getAllConfirmedEvents(sessionUserId);
     if (events.length === 0) {
       return c.json({
         success: false,

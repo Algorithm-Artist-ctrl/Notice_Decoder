@@ -71,20 +71,26 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               <div className="space-y-1.5 max-w-2xl">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                    n.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                    n.status === 'confirmed' 
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                      : n.status === 'review_required'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                      : n.status === 'failed'
+                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                      : 'bg-blue-100 text-blue-800 border border-blue-200'
                   }`}>
-                    {n.status}
+                    {n.status.replace(/_/g, ' ')}
                   </span>
+
+                  {n.documentDomain && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded">
+                      {n.documentDomain}
+                    </span>
+                  )}
 
                   {n.documentType && (
                     <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700 border border-brand-200 px-2 py-0.5 rounded">
                       {n.documentType.replace(/_/g, ' ')}
-                    </span>
-                  )}
-                  
-                  {n.isDemo && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-                      Sample Notice
                     </span>
                   )}
 

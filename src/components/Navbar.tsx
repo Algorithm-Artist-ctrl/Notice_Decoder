@@ -20,8 +20,6 @@ interface NavbarProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   activeConflictsCount: number;
-  onLoadDemoNotice: () => void;
-  isDemoLoading: boolean;
   timezone: string;
   user?: { id: string; name: string; email: string } | null;
   onOpenAuth: () => void;
@@ -32,8 +30,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   onSelectTab,
   activeConflictsCount,
-  onLoadDemoNotice,
-  isDemoLoading,
   timezone,
   user,
   onOpenAuth,
@@ -126,15 +122,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>{timezone}</span>
             </div>
 
-            {/* Isolated Sandbox Demo Button */}
+            {/* Primary Action Button */}
             <button
-              onClick={onLoadDemoNotice}
-              disabled={isDemoLoading}
-              className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-50 text-brand-800 border border-brand-200 hover:bg-brand-100 transition shadow-2xs disabled:opacity-60"
-              title="Explore isolated demonstration circular (does not modify your records)"
+              onClick={() => onSelectTab('notices')}
+              className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-900 hover:bg-navy-800 text-white transition shadow-xs"
             >
-              <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-              <span>{isDemoLoading ? 'Loading sandbox...' : 'Demo Sandbox'}</span>
+              <UploadCloud className="w-3.5 h-3.5 text-brand-300" />
+              <span>Upload Document</span>
             </button>
 
             {/* Auth Button or User Profile */}
@@ -223,14 +217,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="pt-2 border-t border-slate-100">
             <button
               onClick={() => {
-                onLoadDemoNotice();
+                onSelectTab('notices');
                 setMobileMenuOpen(false);
               }}
-              disabled={isDemoLoading}
-              className="w-full flex items-center justify-center space-x-2 text-xs font-semibold px-3 py-2 rounded-lg bg-brand-50 text-brand-800 border border-brand-200"
+              className="w-full flex items-center justify-center space-x-2 text-xs font-semibold px-3 py-2 rounded-lg bg-navy-900 text-white shadow-xs"
             >
-              <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-              <span>Try sample notice</span>
+              <UploadCloud className="w-3.5 h-3.5 text-brand-300" />
+              <span>Upload Document</span>
             </button>
           </div>
         </div>

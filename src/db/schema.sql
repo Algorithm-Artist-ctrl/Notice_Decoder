@@ -73,12 +73,18 @@ CREATE INDEX IF NOT EXISTS idx_conflicts_notice_id ON conflicts_cache(notice_id)
 
 -- 4. Document-to-Action Platform Extensions
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS document_type VARCHAR(64) DEFAULT 'general_document';
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS document_domain VARCHAR(64) DEFAULT 'general';
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS analysis_case VARCHAR(8) DEFAULT 'E';
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS summary TEXT;
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS key_information JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS directives JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS required_actions JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS contacts_references JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS actionable_items_count INTEGER DEFAULT 0;
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS storage_path VARCHAR(512);
 
 CREATE INDEX IF NOT EXISTS idx_notices_document_type ON notices(document_type);
+CREATE INDEX IF NOT EXISTS idx_notices_document_domain ON notices(document_domain);
 
 -- 5. Event Item Type & Generalization
 ALTER TABLE events ADD COLUMN IF NOT EXISTS item_type VARCHAR(32) DEFAULT 'timed_event';

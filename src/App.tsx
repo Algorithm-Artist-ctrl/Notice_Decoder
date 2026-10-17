@@ -49,7 +49,6 @@ export const App: React.FC = () => {
   const [conflicts, setConflicts] = useState<ConflictRecord[]>([]);
   const [activeReviewNotice, setActiveReviewNotice] = useState<NoticeRecord | null>(null);
   const [activeReviewEvents, setActiveReviewEvents] = useState<ExtractedEvent[]>([]);
-  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const [timezone, setTimezone] = useState<string>(
     localStorage.getItem('notice_decoder_tz') || 'Asia/Kolkata'
@@ -168,24 +167,6 @@ export const App: React.FC = () => {
     } catch {}
   };
 
-  const handleLoadDemoNotice = async () => {
-    try {
-      setIsDemoLoading(true);
-      const data = await apiClient.post('/api/demo/seed');
-      if (!data.success) throw new Error(data.error || 'Failed to seed demo data');
-
-      await refreshAppData();
-      setActiveReviewNotice(data.data.notice);
-      setActiveReviewEvents(data.data.events);
-      navigateToTab('review');
-      showToast('Sample circular loaded into Review Gate!', 'success');
-    } catch (err: any) {
-      showToast(`Error loading sample notice: ${err.message}`, 'error');
-    } finally {
-      setIsDemoLoading(false);
-    }
-  };
-
   const handleUploadSuccess = (notice: NoticeRecord, extractedEvents: ExtractedEvent[]) => {
     refreshAppData();
     setActiveReviewNotice(notice);
@@ -253,8 +234,6 @@ export const App: React.FC = () => {
         currentTab={currentTab}
         onSelectTab={(tab) => navigateToTab(tab)}
         activeConflictsCount={conflicts.length}
-        onLoadDemoNotice={handleLoadDemoNotice}
-        isDemoLoading={isDemoLoading}
         timezone={timezone}
         user={authUser}
         onOpenAuth={() => setAuthModalOpen(true)}
@@ -266,8 +245,6 @@ export const App: React.FC = () => {
         {currentTab === 'landing' && (
           <LandingView
             onNavigate={(tab) => navigateToTab(tab)}
-            onLoadDemo={handleLoadDemoNotice}
-            isDemoLoading={isDemoLoading}
           />
         )}
 
@@ -278,8 +255,6 @@ export const App: React.FC = () => {
             conflicts={conflicts}
             onNavigate={(tab) => navigateToTab(tab)}
             onOpenNotice={handleOpenNotice}
-            onLoadDemo={handleLoadDemoNotice}
-            isDemoLoading={isDemoLoading}
             dbError={dbError}
             onRetryConnection={refreshAppData}
           />

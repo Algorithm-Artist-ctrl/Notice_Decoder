@@ -13,7 +13,10 @@ import {
   Sparkles,
   ShieldAlert,
   Info,
-  Calendar
+  Calendar,
+  CheckSquare,
+  Phone,
+  ListChecks
 } from 'lucide-react';
 import { NoticeRecord, ExtractedEvent, EventCategory, EventKind } from '../types';
 import { detectConflicts, format12Hour } from '../lib/conflict-engine';
@@ -125,16 +128,33 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Dashboard</span>
           </button>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Review & Verify Extracted Information</h1>
-            {notice.isDemo && (
-              <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-                Sample Notice
+            {notice.documentDomain && (
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-full">
+                {notice.documentDomain}
               </span>
             )}
             {notice.documentType && (
               <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700 border border-brand-200 px-2.5 py-0.5 rounded-full">
                 {notice.documentType.replace(/_/g, ' ')}
+              </span>
+            )}
+            {notice.analysisCase && (
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                notice.analysisCase === 'A' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                notice.analysisCase === 'B' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                notice.analysisCase === 'C' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                notice.analysisCase === 'D' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                'bg-slate-100 text-slate-700 border-slate-200'
+              }`}>
+                Case {notice.analysisCase}: {
+                  notice.analysisCase === 'A' ? 'Timed Schedule' :
+                  notice.analysisCase === 'B' ? 'Deadlines & Tasks' :
+                  notice.analysisCase === 'C' ? 'Directives & Guidance' :
+                  notice.analysisCase === 'D' ? 'Mixed Content' :
+                  'Informational'
+                }
               </span>
             )}
           </div>
@@ -224,6 +244,75 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
             </div>
           )}
 
+          {/* Directives & Policies if distinct */}
+          {notice.directives && notice.directives.length > 0 && (
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 flex items-center space-x-1">
+                <ListChecks className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Directives & Policies ({notice.directives.length})</span>
+              </span>
+              <ul className="text-xs text-emerald-950 space-y-1.5 pl-1">
+                {notice.directives.map((dir, idx) => (
+                  <li key={idx} className="flex items-start space-x-2">
+                    <span className="text-emerald-600 font-bold">•</span>
+                    <span className="leading-snug">{dir}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Action Tasks & Requirements */}
+          {notice.requiredActions && notice.requiredActions.length > 0 && (
+            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 flex items-center space-x-1">
+                <CheckSquare className="w-3.5 h-3.5 text-amber-600" />
+                <span>Action Tasks & Requirements ({notice.requiredActions.length})</span>
+              </span>
+              <div className="space-y-2">
+                {notice.requiredActions.map((act, idx) => (
+                  <div key={idx} className="bg-white/80 border border-amber-100 rounded-lg p-2 text-xs text-slate-800 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-900">{act.action || act.task}</span>
+                      {act.priority && (
+                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                          act.priority === 'high' ? 'bg-red-100 text-red-700' :
+                          act.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {act.priority}
+                        </span>
+                      )}
+                    </div>
+                    {(act.assigneeOrTarget || act.deadline || act.dueDate) && (
+                      <div className="flex items-center space-x-3 text-[11px] text-slate-500">
+                        {act.assigneeOrTarget && <span>Target: {act.assigneeOrTarget}</span>}
+                        {(act.deadline || act.dueDate) && <span>Due: {act.deadline || act.dueDate}</span>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Contacts & References */}
+          {notice.contactsOrReferences && notice.contactsOrReferences.length > 0 && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1">
+                <Phone className="w-3.5 h-3.5 text-slate-500" />
+                <span>Contacts & References ({notice.contactsOrReferences.length})</span>
+              </span>
+              <ul className="text-xs text-slate-600 space-y-1 pl-1 font-mono text-[11px]">
+                {notice.contactsOrReferences.map((ref, idx) => (
+                  <li key={idx} className="flex items-center space-x-1.5">
+                    <span className="text-slate-400">#</span>
+                    <span>{ref}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono leading-relaxed text-slate-800 space-y-3">
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               {notice.title}
@@ -261,7 +350,15 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Extracted Fields & Corrections ({events.length})</span>
+              <span>
+                {notice.analysisCase === 'B' 
+                  ? `Extracted Deadlines & Action Tasks (${events.length})` 
+                  : notice.analysisCase === 'A'
+                  ? `Extracted Timed Events (${events.length})`
+                  : notice.analysisCase === 'D'
+                  ? `Extracted Schedules & Tasks (${events.length})`
+                  : `Extracted Items & Corrections (${events.length})`}
+              </span>
             </h2>
             <span className="text-[11px] text-slate-500">
               {events.length > 0 ? 'Click any card to edit its properties' : 'Zero-date document'}
@@ -273,10 +370,21 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               <div className="w-12 h-12 bg-blue-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto">
                 <Info className="w-6 h-6" />
               </div>
-              <div className="space-y-1 max-w-md mx-auto">
-                <h3 className="text-sm font-bold text-slate-900">Reference Document (No Dates Detected)</h3>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <span className="inline-block text-[11px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full mb-1">
+                  {notice.analysisCase === 'E' 
+                    ? 'Informational Notice — No Action Required' 
+                    : 'Reference & Policy Document (Zero-Date)'}
+                </span>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {notice.analysisCase === 'E' 
+                    ? 'Purely Informational Document' 
+                    : 'Directives & Guidance (No Scheduled Dates)'}
+                </h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  This document was analyzed as informational, policy, or advisory guidelines without scheduled dates or calendar deadlines.
+                  {notice.analysisCase === 'E'
+                    ? 'This document has been analyzed as an informational circular or announcement with zero calendar commitments or mandatory tasks.'
+                    : 'This document contains policy directives, general instructions, or regulations without calendar deadlines or scheduled time slots.'}
                 </p>
               </div>
               <div className="flex justify-center gap-3 pt-2">
@@ -295,7 +403,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
                   className="inline-flex items-center space-x-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{isSaving ? 'Saving...' : 'Save Reference Document'}</span>
+                  <span>{isSaving ? 'Saving...' : 'Save & Confirm Document'}</span>
                 </button>
               </div>
             </div>

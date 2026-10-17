@@ -4,7 +4,6 @@ import {
   FileText, 
   AlertCircle, 
   CheckCircle2, 
-  Sparkles, 
   ArrowRight, 
   RefreshCw,
   FileSpreadsheet,
@@ -34,39 +33,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-  // Multi-domain Presets
-  const PRESETS = [
-    {
-      id: 'academic_sample',
-      name: 'Academic Circular (Exam & Lecture)',
-      title: 'Department Circular: Internal Test 2 & Guest Lecture',
-      text: `All III-year CSE students: Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204. Lab records must be submitted to the department office by 12:00 noon on 13 Nov. A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.`,
-    },
-    {
-      id: 'office_memo',
-      name: 'Office Memo & Strategy Sync',
-      title: 'Q4 Product Roadmap & All-Hands Meeting',
-      text: `To all Engineering and Product staff: The Q4 Product Strategy All-Hands is scheduled for 18 Nov 2026 from 10:00 AM to 11:30 AM in Main Conference Room A and Zoom. The Q3 Sprint Review will run from 11:00 AM to 12:00 PM in Room B. Architecture sign-off documents must be submitted to Jira by 05:00 PM on 18 Nov.`,
-    },
-    {
-      id: 'conference_event',
-      name: 'Tech Conference & Workshop',
-      title: 'DevConf 2026: Keynote & Developer Workshops',
-      text: `DevConf 2026 Announcement: The Opening Keynote takes place on 22 Nov 2026 from 09:00 AM to 10:30 AM in Hall 1. Hands-on Rust Workshop is scheduled on 22 Nov 2026 from 10:00 AM to 12:30 PM in Workshop Studio. Speaker presentation slides must be submitted to the organizer portal by 08:30 AM on 22 Nov.`,
-    },
-    {
-      id: 'placement_interview',
-      name: 'Campus Recruitment & Interviews',
-      title: 'Engineering Recruitment: Technical Assessment & Interviews',
-      text: `Candidate Schedule: Pre-Placement Presentation starts on 25 Nov 2026 at 09:30 AM to 10:30 AM in Auditorium 2. Technical Coding Round 1 will be conducted from 10:15 AM to 11:45 AM in Lab 3. Document submission deadline is 25 Nov at 09:00 AM at the reception desk.`,
-    },
-    {
-      id: 'policy_advisory',
-      name: 'Security Advisory (Zero-Date Reference)',
-      title: 'Information Security & Data Protection Policy Directive',
-      text: `MEMORANDUM ON INFORMATION SECURITY: All team members must adhere to strict zero-trust credential hygiene. API keys and service account secrets must never be committed to source repositories. Multi-Factor Authentication is strictly mandatory for all production console access. Any suspected compromise must be reported immediately to security@domain.org.`,
-    },
-  ];
+
 
   const handleFileSelect = (file: File) => {
     setErrorMessage(null);
@@ -167,13 +134,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
     }
   };
 
-  const loadPreset = (preset: typeof PRESETS[0]) => {
-    setActiveTab('text');
-    setTitle(preset.title);
-    setRawText(preset.text);
-    setErrorMessage(null);
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       
@@ -183,25 +143,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         <p className="text-xs text-slate-500 mt-1">
           Upload circulars, office memos, meeting minutes, interview calls, conference announcements, or public advisories to extract clear, actionable information.
         </p>
-      </div>
-
-      {/* Preset Quick Select Pills */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
-        <span className="text-xs font-semibold text-slate-700 flex items-center space-x-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-          <span>Quick Test Presets (Click to load sample documents across domains):</span>
-        </span>
-        <div className="flex flex-wrap gap-2">
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => loadPreset(p)}
-              className="text-xs bg-white hover:bg-slate-100 text-slate-700 font-medium px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition flex items-center space-x-1"
-            >
-              <span>{p.name}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Upload Box Container */}

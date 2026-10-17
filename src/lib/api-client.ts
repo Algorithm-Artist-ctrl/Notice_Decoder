@@ -96,7 +96,20 @@ export async function parseResponse<T = any>(res: Response, correlationId: strin
 }
 
 /**
- * Gets authentication headers
+ * Generates or retrieves an isolated anonymous session ID for guest visitors
+ */
+export function getAnonymousSessionId(): string {
+  if (typeof window === 'undefined') return '';
+  let sid = localStorage.getItem('notice_decoder_session_id');
+  if (!sid) {
+    sid = 'sid_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+    localStorage.setItem('notice_decoder_session_id', sid);
+  }
+  return sid;
+}
+
+/**
+ * Gets authentication and session headers
  */
 export function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = { ...extraHeaders };
@@ -104,6 +117,10 @@ export function getAuthHeaders(extraHeaders: Record<string, string> = {}): Recor
     const token = localStorage.getItem('notice_decoder_token');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    }
+    const sid = getAnonymousSessionId();
+    if (sid) {
+      headers['x-session-id'] = sid;
     }
   }
   return headers;

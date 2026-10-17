@@ -23,14 +23,10 @@ const NoticeTransform3D = React.lazy(() =>
 
 interface LandingViewProps {
   onNavigate: (tab: NavTab) => void;
-  onLoadDemo: () => void;
-  isDemoLoading: boolean;
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({
   onNavigate,
-  onLoadDemo,
-  isDemoLoading,
 }) => {
   const [activeInteractiveTab, setActiveInteractiveTab] = useState<'visual' | 'code' | 'raw'>('visual');
 
@@ -72,12 +68,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
               </button>
 
               <button
-                onClick={onLoadDemo}
-                disabled={isDemoLoading}
-                className="inline-flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-semibold px-6 py-3.5 rounded-xl transition text-sm disabled:opacity-50"
+                onClick={() => onNavigate('dashboard')}
+                className="inline-flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-semibold px-6 py-3.5 rounded-xl transition text-sm"
               >
-                <Sparkles className="w-4 h-4 text-brand-600" />
-                <span>{isDemoLoading ? 'Loading sample...' : 'Explore an example'}</span>
+                <span>Go to Dashboard</span>
               </button>
             </div>
 
@@ -282,11 +276,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
               Deterministic Interval Intersection: [10:00, 11:30) ∩ [11:00, 12:30)
             </span>
             <button
-              onClick={onLoadDemo}
-              disabled={isDemoLoading}
+              onClick={() => onNavigate('conflicts')}
               className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center space-x-1 self-start sm:self-auto"
             >
-              <span>Explore this example in Review Gate</span>
+              <span>Open Conflict Analyzer</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -441,7 +434,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             Ready to turn your documents into a clear plan?
           </h2>
           <p className="text-sm text-slate-300 leading-relaxed">
-            Upload your first document or explore our sample notice to experience conflict-free scheduling and clear action items.
+            Upload your document to experience accurate date extraction, conflict-free scheduling, and structured action items.
           </p>
         </div>
 
@@ -454,12 +447,11 @@ export const LandingView: React.FC<LandingViewProps> = ({
             <span>Upload a Document</span>
           </button>
           <button
-            onClick={onLoadDemo}
-            disabled={isDemoLoading}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-6 py-3.5 rounded-xl transition text-sm disabled:opacity-50"
+            onClick={() => onNavigate('dashboard')}
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-6 py-3.5 rounded-xl transition text-sm"
           >
-            <Sparkles className="w-4 h-4 text-brand-300" />
-            <span>Try sample notice</span>
+            <ArrowRight className="w-4 h-4 text-brand-300" />
+            <span>Go to Dashboard</span>
           </button>
         </div>
       </section>

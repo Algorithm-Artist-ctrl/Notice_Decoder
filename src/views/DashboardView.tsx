@@ -25,8 +25,6 @@ interface DashboardViewProps {
   conflicts: ConflictRecord[];
   onNavigate: (tab: NavTab) => void;
   onOpenNotice: (noticeId: string) => void;
-  onLoadDemo: () => void;
-  isDemoLoading: boolean;
   dbError?: string | null;
   onRetryConnection?: () => void;
 }
@@ -37,8 +35,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   conflicts,
   onNavigate,
   onOpenNotice,
-  onLoadDemo,
-  isDemoLoading,
   dbError,
   onRetryConnection,
 }) => {
@@ -144,16 +140,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <UploadCloud className="w-4 h-4 text-brand-300" />
             <span>Upload Document</span>
           </button>
-          
-          <button
-            onClick={onLoadDemo}
-            disabled={isDemoLoading}
-            className="inline-flex items-center space-x-1.5 bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 font-medium px-4 py-2.5 rounded-xl text-xs transition disabled:opacity-50"
-            title="Open isolated demonstration sandbox (does not modify your account records)"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-            <span>{isDemoLoading ? 'Loading sandbox...' : 'Demo Sandbox'}</span>
-          </button>
         </div>
       </div>
 
@@ -165,9 +151,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           
           <div className="space-y-1.5">
-            <h2 className="text-xl font-bold text-slate-900">No documents processed yet</h2>
+            <h2 className="text-xl font-bold text-slate-900">Turn Documents into Clear, Actionable Information</h2>
             <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              Upload any document—such as academic circulars, office notices, meeting minutes, conference announcements, job notifications, or government advisories—to extract dates, deadlines, and key actionable points.
+              Upload a notice, circular, letter, or document to understand its key points, dates, deadlines, and required actions.
             </p>
           </div>
 
@@ -178,15 +164,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             >
               <UploadCloud className="w-4 h-4 text-brand-300" />
               <span>Upload Document</span>
-            </button>
-            <button
-              onClick={onLoadDemo}
-              disabled={isDemoLoading}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-6 py-3 rounded-xl text-xs transition border border-slate-200"
-              title="Open isolated demonstration sandbox (does not modify your account records)"
-            >
-              <Sparkles className="w-4 h-4 text-brand-600" />
-              <span>{isDemoLoading ? 'Loading sandbox...' : 'Explore Demo Sandbox'}</span>
             </button>
           </div>
         </div>
@@ -361,9 +338,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="font-semibold text-slate-900 text-xs line-clamp-1">{n.title}</h4>
-                      {n.isDemo && (
-                        <span className="text-[9px] bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-200">
-                          Sample
+                      {n.documentType && (
+                        <span className="text-[9px] bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-200 uppercase tracking-wider">
+                          {n.documentType.replace(/_/g, ' ')}
                         </span>
                       )}
                     </div>
