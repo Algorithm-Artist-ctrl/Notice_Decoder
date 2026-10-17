@@ -18,7 +18,7 @@ import {
   Phone,
   ListChecks
 } from 'lucide-react';
-import { NoticeRecord, ExtractedEvent, EventCategory, EventKind } from '../types';
+import { NoticeRecord, ExtractedEvent, EventCategory, EventKind, SummaryLanguage } from '../types';
 import { detectConflicts, format12Hour } from '../lib/conflict-engine';
 import { apiClient } from '../lib/api-client';
 
@@ -40,6 +40,34 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
     initialEvents.length > 0 ? initialEvents[0].id : null
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [summaryLang, setSummaryLang] = useState<SummaryLanguage>('english');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [summaries, setSummaries] = useState<Record<SummaryLanguage, string>>({
+    english: notice.summaryEnglish || notice.summary || '',
+    hinglish: notice.summaryHinglish || '',
+    hindi: notice.summaryHindi || '',
+  });
+
+  const handleLanguageSwitch = async (targetLang: SummaryLanguage) => {
+    setSummaryLang(targetLang);
+    if (summaries[targetLang]) {
+      return;
+    }
+    setIsTranslating(true);
+    try {
+      const res = await apiClient.post(`/api/notices/${notice.id}/translate`, { language: targetLang });
+      if (res.success && res.data?.summary) {
+        setSummaries(prev => ({
+          ...prev,
+          [targetLang]: res.data.summary,
+        }));
+      }
+    } catch (err: any) {
+      console.warn('Translation error:', err.message);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   // Re-run conflict engine whenever editable events change!
   const liveConflictAnalysis = useMemo(() => {
@@ -213,16 +241,68 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
             </span>
           </div>
 
-          {/* AI Executive Summary if available */}
-          {notice.summary && (
-            <div className="bg-brand-50/60 border border-brand-200/70 rounded-xl p-3.5 space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-800 flex items-center space-x-1">
-                <Sparkles className="w-3 h-3 text-brand-600" />
-                <span>Executive Summary</span>
-              </span>
-              <p className="text-xs text-slate-700 leading-relaxed">
-                {notice.summary}
-              </p>
+          {/* Multilingual AI Executive Summary */}
+          {(notice.summary || summaries.english) && (
+            <div className="bg-brand-50/60 border border-brand-200/70 rounded-xl p-3.5 space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-800 flex items-center space-x-1">
+                  <Sparkles className="w-3 h-3 text-brand-600" />
+                  <span>Executive Summary</span>
+                </span>
+
+                {/* 3-Language Segmented Switcher */}
+                <div className="inline-flex bg-white/80 p-0.5 rounded-lg border border-brand-200/60 shadow-2xs self-start sm:self-auto text-[11px] font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageSwitch('english')}
+                    className={`px-2.5 py-0.5 rounded-md transition-all ${
+                      summaryLang === 'english'
+                        ? 'bg-brand-600 text-white font-semibold shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    English
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageSwitch('hinglish')}
+                    className={`px-2.5 py-0.5 rounded-md transition-all ${
+                      summaryLang === 'hinglish'
+                        ? 'bg-brand-600 text-white font-semibold shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Hinglish
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageSwitch('hindi')}
+                    className={`px-2.5 py-0.5 rounded-md transition-all ${
+                      summaryLang === 'hindi'
+                        ? 'bg-brand-600 text-white font-semibold shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    हिंदी
+                  </button>
+                </div>
+              </div>
+
+              {isTranslating ? (
+                <div className="py-3 flex items-center justify-center space-x-2 text-xs text-brand-700">
+                  <span className="w-3.5 h-3.5 border-2 border-brand-600/30 border-t-brand-600 rounded-full animate-spin" />
+                  <span>Translating summary to {summaryLang === 'hinglish' ? 'Hinglish' : 'Hindi'}...</span>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-700 leading-relaxed font-sans">
+                  {summaries[summaryLang] || notice.summary}
+                </p>
+              )}
+
+              <div className="flex items-center justify-between text-[10px] text-brand-700/80 pt-1 border-t border-brand-200/40">
+                <span>Facts, numbers, & dates strictly preserved</span>
+                <span className="font-mono text-[9px] uppercase tracking-wider">{summaryLang}</span>
+              </div>
             </div>
           )}
 

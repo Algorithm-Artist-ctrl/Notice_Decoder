@@ -1,12 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import { NoticeRecord, ExtractedEvent, ConflictRecord, UserPreferences, DocumentType } from '../types';
+import { NoticeRecord, ExtractedEvent, ConflictRecord, UserPreferences, DocumentType, ReminderRecord, SummaryLanguage } from '../types';
 import { detectConflicts } from '../lib/conflict-engine';
 import { getNeonClient } from './connection';
 
 interface LocalStoreData {
   notices: NoticeRecord[];
   events: ExtractedEvent[];
+  reminders?: ReminderRecord[];
   userPreferences?: Record<string, UserPreferences>;
 }
 
@@ -22,7 +23,7 @@ function ensureDataFile(): LocalStoreData {
     } catch {}
   }
   if (!fs.existsSync(DATA_FILE)) {
-    const initial: LocalStoreData = { notices: [], events: [], userPreferences: {} };
+    const initial: LocalStoreData = { notices: [], events: [], reminders: [], userPreferences: {} };
     try {
       fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2), 'utf-8');
     } catch {}
@@ -32,7 +33,7 @@ function ensureDataFile(): LocalStoreData {
     const content = fs.readFileSync(DATA_FILE, 'utf-8');
     return JSON.parse(content);
   } catch {
-    const initial: LocalStoreData = { notices: [], events: [], userPreferences: {} };
+    const initial: LocalStoreData = { notices: [], events: [], reminders: [], userPreferences: {} };
     return initial;
   }
 }
@@ -82,6 +83,9 @@ function mapRowToNotice(r: any, eventCount = 0): NoticeRecord {
     documentDomain: r.document_domain || 'general',
     analysisCase: r.analysis_case || 'E',
     summary: r.summary ? String(r.summary) : undefined,
+    summaryEnglish: r.summary_english ? String(r.summary_english) : undefined,
+    summaryHinglish: r.summary_hinglish ? String(r.summary_hinglish) : undefined,
+    summaryHindi: r.summary_hindi ? String(r.summary_hindi) : undefined,
     keyInformation: Array.isArray(r.key_information)
       ? r.key_information
       : (typeof r.key_information === 'string' ? JSON.parse(r.key_information) : []),
@@ -110,6 +114,27 @@ function mapRowToNotice(r: any, eventCount = 0): NoticeRecord {
   };
 }
 
+function mapRowToReminder(r: any): ReminderRecord {
+  return {
+    id: String(r.id),
+    userId: String(r.user_id),
+    noticeId: r.notice_id ? String(r.notice_id) : null,
+    title: String(r.title),
+    description: r.description ? String(r.description) : null,
+    date: r.date_str || (r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date)),
+    startTime: r.start_time || null,
+    endTime: r.end_time || null,
+    deadlineTime: r.deadline_time || null,
+    location: r.location || null,
+    reminderDateTime: r.reminder_date_time ? new Date(r.reminder_date_time).toISOString() : null,
+    recurrence: r.recurrence || 'none',
+    isCompleted: Boolean(r.is_completed),
+    isManual: r.is_manual !== undefined ? Boolean(r.is_manual) : true,
+    createdAt: r.created_at ? new Date(r.created_at).toISOString() : undefined,
+    updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : undefined,
+  };
+}
+
 /**
  * Notice & Event Data Access Layer with direct Neon PostgreSQL persistence
  */
@@ -124,7 +149,8 @@ export class NoticeStore {
         await neon`
           INSERT INTO notices (
             id, user_id, title, raw_text, file_name, file_type, file_size, status, error_message, is_demo, 
-            document_type, document_domain, analysis_case, summary, key_information, directives, required_actions, 
+            document_type, document_domain, analysis_case, summary, summary_english, summary_hinglish, summary_hindi,
+            key_information, directives, required_actions, 
             contacts_references, actionable_items_count, storage_path, created_at, updated_at
           ) VALUES (
             ${notice.id}, 
@@ -141,6 +167,9 @@ export class NoticeStore {
             ${notice.documentDomain || 'general'},
             ${notice.analysisCase || 'E'},
             ${notice.summary || null},
+            ${notice.summaryEnglish || notice.summary || null},
+            ${notice.summaryHinglish || null},
+            ${notice.summaryHindi || null},
             ${JSON.stringify(notice.keyInformation || [])}::jsonb,
             ${JSON.stringify(notice.directives || [])}::jsonb,
             ${JSON.stringify(notice.requiredActions || [])}::jsonb,
@@ -158,6 +187,9 @@ export class NoticeStore {
             document_domain = EXCLUDED.document_domain,
             analysis_case = EXCLUDED.analysis_case,
             summary = EXCLUDED.summary,
+            summary_english = COALESCE(EXCLUDED.summary_english, notices.summary_english),
+            summary_hinglish = COALESCE(EXCLUDED.summary_hinglish, notices.summary_hinglish),
+            summary_hindi = COALESCE(EXCLUDED.summary_hindi, notices.summary_hindi),
             key_information = EXCLUDED.key_information,
             directives = EXCLUDED.directives,
             required_actions = EXCLUDED.required_actions,
@@ -594,6 +626,7 @@ export class NoticeStore {
     const defaultPrefs: UserPreferences = {
       userId,
       timezone: 'Asia/Kolkata',
+      preferredLanguage: 'english',
       reminderLeadTimeMinutes: 30,
       notificationPreferences: {
         email: false,
@@ -606,7 +639,7 @@ export class NoticeStore {
     if (neon) {
       try {
         const rows = await neon`
-          SELECT user_id, timezone, reminder_lead_time_minutes, notification_preferences, updated_at
+          SELECT user_id, timezone, preferred_language, reminder_lead_time_minutes, notification_preferences, updated_at
           FROM user_preferences
           WHERE user_id = ${userId}
           LIMIT 1;
@@ -616,6 +649,7 @@ export class NoticeStore {
           return {
             userId: String(r.user_id),
             timezone: r.timezone || 'Asia/Kolkata',
+            preferredLanguage: (r.preferred_language as SummaryLanguage) || 'english',
             reminderLeadTimeMinutes: Number(r.reminder_lead_time_minutes) || 30,
             notificationPreferences: typeof r.notification_preferences === 'string'
               ? JSON.parse(r.notification_preferences)
@@ -649,20 +683,23 @@ export class NoticeStore {
       try {
         await neon`
           INSERT INTO user_preferences (
-            user_id, timezone, reminder_lead_time_minutes, notification_preferences, updated_at
+            user_id, timezone, preferred_language, reminder_lead_time_minutes, notification_preferences, updated_at
           ) VALUES (
             ${userId},
             ${merged.timezone},
+            ${merged.preferredLanguage || 'english'},
             ${merged.reminderLeadTimeMinutes},
             ${JSON.stringify(merged.notificationPreferences)}::jsonb,
             CURRENT_TIMESTAMP
           )
           ON CONFLICT (user_id) DO UPDATE SET
             timezone = EXCLUDED.timezone,
+            preferred_language = EXCLUDED.preferred_language,
             reminder_lead_time_minutes = EXCLUDED.reminder_lead_time_minutes,
             notification_preferences = EXCLUDED.notification_preferences,
             updated_at = CURRENT_TIMESTAMP;
         `;
+        return merged;
       } catch (err: any) {
         console.warn('Neon saveUserPreferences warning:', err.message);
       }
@@ -673,6 +710,277 @@ export class NoticeStore {
     data.userPreferences[userId] = merged;
     writeDataFile(data);
     return merged;
+  }
+
+  /**
+   * Deletes a single event with user ownership check
+   */
+  static async deleteEvent(id: string, userId: string): Promise<boolean> {
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        const rows = await neon`
+          SELECT e.id, e.user_id, n.is_demo 
+          FROM events e
+          LEFT JOIN notices n ON n.id = e.notice_id
+          WHERE e.id = ${id} LIMIT 1;
+        `;
+        if (!rows || rows.length === 0) return false;
+        if (rows[0].is_demo) return false; // Prevent deleting demo events
+        if (rows[0].user_id && rows[0].user_id !== userId) return false;
+
+        await neon`DELETE FROM events WHERE id = ${id};`;
+        return true;
+      } catch (err: any) {
+        console.error('Neon deleteEvent failed:', err);
+        if (isProduction) throw new Error(`Database delete failed: ${err.message}`);
+      }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
+    }
+
+    const data = ensureDataFile();
+    const event = data.events.find(e => e.id === id);
+    if (!event) return false;
+    if (event.userId && event.userId !== userId) return false;
+
+    data.events = data.events.filter(e => e.id !== id);
+    writeDataFile(data);
+    return true;
+  }
+
+  /**
+   * Creates a user-owned reminder record
+   */
+  static async createReminder(reminder: ReminderRecord): Promise<ReminderRecord> {
+    const fullReminder: ReminderRecord = {
+      ...reminder,
+      id: reminder.id || `rem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      isManual: reminder.isManual !== undefined ? Boolean(reminder.isManual) : true,
+      isCompleted: Boolean(reminder.isCompleted),
+      recurrence: reminder.recurrence || 'none',
+      createdAt: reminder.createdAt || new Date().toISOString(),
+      updatedAt: reminder.updatedAt || new Date().toISOString(),
+    };
+
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        await neon`
+          INSERT INTO reminders (
+            id, user_id, notice_id, title, description, date, start_time, end_time, deadline_time,
+            location, reminder_date_time, recurrence, is_completed, is_manual, created_at, updated_at
+          ) VALUES (
+            ${fullReminder.id},
+            ${fullReminder.userId},
+            ${fullReminder.noticeId || null},
+            ${fullReminder.title},
+            ${fullReminder.description || null},
+            ${fullReminder.date},
+            ${fullReminder.startTime || null},
+            ${fullReminder.endTime || null},
+            ${fullReminder.deadlineTime || null},
+            ${fullReminder.location || null},
+            ${fullReminder.reminderDateTime || null},
+            ${fullReminder.recurrence || 'none'},
+            ${Boolean(fullReminder.isCompleted)},
+            ${Boolean(fullReminder.isManual)},
+            ${fullReminder.createdAt},
+            ${fullReminder.updatedAt}
+          );
+        `;
+        return fullReminder;
+      } catch (err: any) {
+        console.error('Neon createReminder failed:', err);
+        if (isProduction) throw new Error(`Database save reminder failed: ${err.message}`);
+      }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
+    }
+
+    const data = ensureDataFile();
+    if (!data.reminders) data.reminders = [];
+    data.reminders.push(fullReminder);
+    writeDataFile(data);
+    return fullReminder;
+  }
+
+  /**
+   * Retrieves all reminders for an authenticated user
+   */
+  static async getReminders(userId: string): Promise<ReminderRecord[]> {
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        const rows = await neon`
+          SELECT *, date::text as date_str
+          FROM reminders
+          WHERE user_id = ${userId}
+          ORDER BY date ASC, COALESCE(start_time, deadline_time, '00:00') ASC;
+        `;
+        return rows.map(mapRowToReminder);
+      } catch (err: any) {
+        console.error('Neon getReminders failed:', err);
+        if (isProduction) throw new Error(`Database read reminders failed: ${err.message}`);
+      }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
+    }
+
+    const data = ensureDataFile();
+    return (data.reminders || [])
+      .filter(r => r.userId === userId)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  /**
+   * Updates a user-owned reminder
+   */
+  static async updateReminder(id: string, updates: Partial<ReminderRecord>, userId: string): Promise<ReminderRecord | null> {
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        const rows = await neon`SELECT * FROM reminders WHERE id = ${id} AND user_id = ${userId} LIMIT 1;`;
+        if (!rows || rows.length === 0) return null;
+
+        const current = mapRowToReminder(rows[0]);
+        const updated: ReminderRecord = {
+          ...current,
+          ...updates,
+          updatedAt: new Date().toISOString(),
+        };
+
+        await neon`
+          UPDATE reminders SET
+            title = ${updated.title},
+            description = ${updated.description || null},
+            date = ${updated.date},
+            start_time = ${updated.startTime || null},
+            end_time = ${updated.endTime || null},
+            deadline_time = ${updated.deadlineTime || null},
+            location = ${updated.location || null},
+            reminder_date_time = ${updated.reminderDateTime || null},
+            recurrence = ${updated.recurrence || 'none'},
+            is_completed = ${Boolean(updated.isCompleted)},
+            updated_at = ${updated.updatedAt}
+          WHERE id = ${id} AND user_id = ${userId};
+        `;
+        return updated;
+      } catch (err: any) {
+        console.error('Neon updateReminder failed:', err);
+        if (isProduction) throw new Error(`Database update reminder failed: ${err.message}`);
+      }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
+    }
+
+    const data = ensureDataFile();
+    if (!data.reminders) data.reminders = [];
+    const idx = data.reminders.findIndex(r => r.id === id && r.userId === userId);
+    if (idx === -1) return null;
+
+    data.reminders[idx] = {
+      ...data.reminders[idx],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    writeDataFile(data);
+    return data.reminders[idx];
+  }
+
+  /**
+   * Deletes a user-owned reminder
+   */
+  static async deleteReminder(id: string, userId: string): Promise<boolean> {
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        const result = await neon`DELETE FROM reminders WHERE id = ${id} AND user_id = ${userId} RETURNING id;`;
+        return Boolean(result && result.length > 0);
+      } catch (err: any) {
+        console.error('Neon deleteReminder failed:', err);
+        if (isProduction) throw new Error(`Database delete reminder failed: ${err.message}`);
+      }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
+    }
+
+    const data = ensureDataFile();
+    if (!data.reminders) return false;
+    const initialLen = data.reminders.length;
+    data.reminders = data.reminders.filter(r => !(r.id === id && r.userId === userId));
+    if (data.reminders.length !== initialLen) {
+      writeDataFile(data);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Deletes entire account and cascades all user documents, events, reminders, and preferences
+   */
+  static async deleteAccount(userId: string): Promise<boolean> {
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        await neon`DELETE FROM reminders WHERE user_id = ${userId};`;
+        await neon`DELETE FROM events WHERE user_id = ${userId};`;
+        await neon`DELETE FROM notices WHERE user_id = ${userId};`;
+        await neon`DELETE FROM user_preferences WHERE user_id = ${userId};`;
+        try {
+          await neon`DELETE FROM neon_auth.session WHERE "userId" = ${userId};`;
+          await neon`DELETE FROM neon_auth.user WHERE id = ${userId};`;
+        } catch {}
+        return true;
+      } catch (err: any) {
+        console.error('Neon deleteAccount failed:', err);
+        if (isProduction) throw new Error(`Database account deletion failed: ${err.message}`);
+      }
+    }
+    const data = ensureDataFile();
+    data.notices = data.notices.filter(n => n.userId !== userId);
+    data.events = data.events.filter(e => e.userId !== userId);
+    if (data.reminders) data.reminders = data.reminders.filter(r => r.userId !== userId);
+    if (data.userPreferences) delete data.userPreferences[userId];
+    writeDataFile(data);
+    return true;
+  }
+
+  /**
+   * Updates multilingual summaries for an existing notice
+   */
+  static async updateNoticeSummaries(
+    id: string,
+    summaries: { english?: string; hinglish?: string; hindi?: string },
+    userId: string
+  ): Promise<boolean> {
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        await neon`
+          UPDATE notices SET
+            summary_english = COALESCE(${summaries.english || null}, summary_english),
+            summary_hinglish = COALESCE(${summaries.hinglish || null}, summary_hinglish),
+            summary_hindi = COALESCE(${summaries.hindi || null}, summary_hindi),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = ${id} AND (user_id = ${userId} OR is_demo = TRUE);
+        `;
+        return true;
+      } catch (err: any) {
+        console.warn('Neon updateNoticeSummaries warning:', err.message);
+      }
+    }
+    const data = ensureDataFile();
+    const notice = data.notices.find(n => n.id === id && (n.userId === userId || n.isDemo));
+    if (notice) {
+      if (summaries.english) notice.summaryEnglish = summaries.english;
+      if (summaries.hinglish) notice.summaryHinglish = summaries.hinglish;
+      if (summaries.hindi) notice.summaryHindi = summaries.hindi;
+      notice.updatedAt = new Date().toISOString();
+      writeDataFile(data);
+      return true;
+    }
+    return false;
   }
 
   /**

@@ -12,7 +12,7 @@ try {
   // Ignored
 }
 
-async function runMigrations() {
+export async function runMigrations() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl || dbUrl.includes('ep-sample-pooler')) {
     console.log('⚠️ DATABASE_URL not set or contains sample placeholder. Skipping remote Neon migration.');
@@ -26,7 +26,6 @@ async function runMigrations() {
   const ddl = fs.readFileSync(schemaPath, 'utf-8');
 
   try {
-    // Neon HTTP API doesn't support multi-statement execute in one call unless split or using raw query
     const statements = ddl
       .split(';')
       .map(s => s.trim())
@@ -38,8 +37,12 @@ async function runMigrations() {
     console.log('✅ Migrations applied successfully to Neon!');
   } catch (err: any) {
     console.error('❌ Migration failed:', err.message);
-    process.exit(1);
+    if (process.argv[1]?.endsWith('migrate.ts')) {
+      process.exit(1);
+    }
   }
 }
 
-runMigrations();
+if (process.argv[1]?.endsWith('migrate.ts')) {
+  runMigrations();
+}

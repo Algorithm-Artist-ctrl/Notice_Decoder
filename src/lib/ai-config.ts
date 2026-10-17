@@ -6,6 +6,7 @@
  */
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+export const FALLBACK_GEMINI_MODEL = 'gemini-2.0-flash';
 
 /**
  * Resolves the currently configured Gemini model identifier.
@@ -16,6 +17,17 @@ export function getGeminiModel(): string {
     return envModel;
   }
   return DEFAULT_GEMINI_MODEL;
+}
+
+/**
+ * Resolves the secondary fallback model if the primary model is unavailable.
+ */
+export function getGeminiFallbackModel(): string {
+  const envFallback = process.env.GEMINI_FALLBACK_MODEL?.trim();
+  if (envFallback && envFallback.length > 0) {
+    return envFallback;
+  }
+  return FALLBACK_GEMINI_MODEL;
 }
 
 export interface AIErrorClassification {

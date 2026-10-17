@@ -13,9 +13,10 @@ import {
   RefreshCw,
   AlertCircle,
   HelpCircle,
+  Bell,
   X
 } from 'lucide-react';
-import { NoticeRecord, ExtractedEvent, ConflictRecord } from '../types';
+import { NoticeRecord, ExtractedEvent, ConflictRecord, ReminderRecord } from '../types';
 import { NavTab } from '../components/Navbar';
 import { format12Hour } from '../lib/conflict-engine';
 
@@ -23,8 +24,10 @@ interface DashboardViewProps {
   notices: NoticeRecord[];
   events: ExtractedEvent[];
   conflicts: ConflictRecord[];
+  reminders?: ReminderRecord[];
   onNavigate: (tab: NavTab) => void;
   onOpenNotice: (noticeId: string) => void;
+  onAddReminder?: () => void;
   dbError?: string | null;
   onRetryConnection?: () => void;
 }
@@ -33,8 +36,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   notices,
   events,
   conflicts,
+  reminders = [],
   onNavigate,
   onOpenNotice,
+  onAddReminder,
   dbError,
   onRetryConnection,
 }) => {
@@ -132,7 +137,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center space-x-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {onAddReminder && (
+            <button
+              onClick={onAddReminder}
+              className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs border border-slate-200 shadow-2xs transition"
+            >
+              <Bell className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Add Reminder</span>
+            </button>
+          )}
           <button
             onClick={() => onNavigate('notices')}
             className="inline-flex items-center space-x-2 bg-navy-900 hover:bg-navy-850 text-white font-medium px-4 py-2.5 rounded-xl text-xs shadow-xs transition"
@@ -267,7 +281,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center space-x-2">
                   <Calendar className="w-4 h-4 text-brand-600" />
-                  <span>Upcoming Confirmed Events ({events.length})</span>
+                  <span>Upcoming Commitments & Reminders ({events.length + reminders.length})</span>
                 </h3>
                 <button
                   onClick={() => onNavigate('calendar')}
@@ -279,41 +293,64 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
 
               <div className="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 shadow-xs overflow-hidden">
-                {events.slice(0, 5).map((ev) => (
-                  <div key={ev.id} className="p-4 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 ${
-                          ev.category === 'exam' ? 'bg-red-100 text-red-800' :
-                          ev.category === 'deadline' ? 'bg-amber-100 text-amber-800' :
-                          ev.category === 'lecture' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {ev.category}
-                        </span>
-                        <h4 className="font-bold text-slate-900 text-sm break-words">{ev.title}</h4>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                        <span className="flex items-center space-x-1 font-mono">
-                          <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span>
-                            {ev.kind === 'deadline_point'
-                              ? `Deadline: ${format12Hour(ev.deadlineTime)}`
-                              : `${format12Hour(ev.startTime)} – ${format12Hour(ev.endTime)}`}
+                {[
+                  ...events.map(ev => ({
+                    id: ev.id,
+                    title: ev.title,
+                    date: ev.date,
+                    time: ev.kind === 'deadline_point'
+                      ? `Deadline: ${format12Hour(ev.deadlineTime)}`
+                      : `${format12Hour(ev.startTime)} – ${format12Hour(ev.endTime)}`,
+                    venue: ev.venue,
+                    badge: ev.category,
+                    badgeColor: ev.category === 'exam' ? 'bg-red-100 text-red-800' : ev.category === 'deadline' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700',
+                    isReminder: false,
+                  })),
+                  ...reminders.map(rem => ({
+                    id: rem.id,
+                    title: rem.title,
+                    date: rem.date,
+                    time: rem.deadlineTime 
+                      ? `Cut-off: ${format12Hour(rem.deadlineTime)}`
+                      : rem.startTime 
+                      ? `${format12Hour(rem.startTime)}${rem.endTime ? ` – ${format12Hour(rem.endTime)}` : ''}`
+                      : 'All Day',
+                    venue: rem.location,
+                    badge: 'Personal Reminder',
+                    badgeColor: 'bg-indigo-100 text-indigo-800',
+                    isReminder: true,
+                  })),
+                ]
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .slice(0, 6)
+                  .map((item) => (
+                    <div key={item.id} className="p-4 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 flex items-center space-x-1 ${item.badgeColor}`}>
+                            {item.isReminder && <Bell className="w-2.5 h-2.5 shrink-0" />}
+                            <span>{item.badge}</span>
                           </span>
-                        </span>
-                        {ev.venue && (
-                          <span className="flex items-center space-x-1">
-                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span>{ev.venue}</span>
+                          <h4 className="font-bold text-slate-900 text-sm break-words">{item.title}</h4>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                          <span className="flex items-center space-x-1 font-mono">
+                            <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>{item.time}</span>
                           </span>
-                        )}
+                          {item.venue && (
+                            <span className="flex items-center space-x-1">
+                              <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span>{item.venue}</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded self-start sm:self-auto shrink-0">
+                        {item.date}
+                      </span>
                     </div>
-                    <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded self-start sm:self-auto shrink-0">
-                      {ev.date}
-                    </span>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
 

@@ -23,10 +23,12 @@ const NoticeTransform3D = React.lazy(() =>
 
 interface LandingViewProps {
   onNavigate: (tab: NavTab) => void;
+  onOpenDemo?: () => void;
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({
   onNavigate,
+  onOpenDemo,
 }) => {
   return (
     <div className="space-y-12 sm:space-y-16 lg:space-y-20 pb-16 sm:pb-20">
@@ -65,9 +67,19 @@ export const LandingView: React.FC<LandingViewProps> = ({
                 <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-0.5" />
               </button>
 
+              {onOpenDemo && (
+                <button
+                  onClick={onOpenDemo}
+                  className="inline-flex items-center justify-center space-x-2 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 font-semibold px-5 py-3.5 rounded-xl transition text-sm shadow-2xs"
+                >
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  <span>Try Interactive Demo</span>
+                </button>
+              )}
+
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="inline-flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-semibold px-6 py-3.5 rounded-xl transition text-sm"
+                className="inline-flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-semibold px-5 py-3.5 rounded-xl transition text-sm"
               >
                 <span>Go to Dashboard</span>
               </button>

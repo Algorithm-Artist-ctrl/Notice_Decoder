@@ -570,6 +570,159 @@ describe('Multi-Domain Document-to-Action & Preferences Suite', () => {
   });
 });
 
+describe('Reminders, Multilingual Translation, Demo Scenarios & Account Deletion Suite', () => {
+  const userEmail = `features_user_${Date.now()}@example.com`;
+  const password = 'StrongPassword123!';
+  let userToken = '';
+  let reminderId = '';
+  let noticeId = '';
+
+  it('registers a dedicated user for feature validation', async () => {
+    const res = await app.request('/api/auth/sign-up', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: userEmail, password, name: 'Features Test User' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    userToken = body.token;
+  });
+
+  it('CRUD for personal reminders via /api/reminders', async () => {
+    // 1. Create reminder
+    const createRes = await app.request('/api/reminders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`,
+      },
+      body: JSON.stringify({
+        title: 'Submit Examination Fee Slip',
+        description: 'Bring printed fee receipt to accounts department.',
+        date: '2026-11-20',
+        startTime: '10:00',
+        endTime: '11:00',
+        location: 'Accounts Section Room 102',
+        recurrence: 'none',
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const createBody = await createRes.json();
+    expect(createBody.success).toBe(true);
+    expect(createBody.data.title).toBe('Submit Examination Fee Slip');
+    expect(createBody.data.isManual).toBe(true);
+    reminderId = createBody.data.id;
+
+    // 2. List reminders
+    const listRes = await app.request('/api/reminders', {
+      headers: { 'Authorization': `Bearer ${userToken}` },
+    });
+    expect(listRes.status).toBe(200);
+    const listBody = await listRes.json();
+    expect(listBody.data.some((r: any) => r.id === reminderId)).toBe(true);
+
+    // 3. Update reminder
+    const updateRes = await app.request(`/api/reminders/${reminderId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`,
+      },
+      body: JSON.stringify({
+        isCompleted: true,
+      }),
+    });
+    expect(updateRes.status).toBe(200);
+    const updateBody = await updateRes.json();
+    expect(updateBody.data.isCompleted).toBe(true);
+
+    // 4. Delete reminder
+    const deleteRes = await app.request(`/api/reminders/${reminderId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${userToken}` },
+    });
+    expect(deleteRes.status).toBe(200);
+  });
+
+  it('translates document summary via /api/notices/:id/translate and caches translation', async () => {
+    // Upload a notice first
+    const uploadRes = await app.request('/api/notices/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`,
+      },
+      body: JSON.stringify({
+        title: 'Department Seminar Announcement',
+        text: 'Department of Computer Science: Annual Technical Seminar on 14 Dec 2026 from 10:00 to 12:00 in Auditorium 1. Attendance is mandatory for all students.',
+      }),
+    });
+    expect(uploadRes.status).toBe(200);
+    const uploadBody = await uploadRes.json();
+    noticeId = uploadBody.data.notice.id;
+
+    // Translate to Hinglish
+    const hinglishRes = await app.request(`/api/notices/${noticeId}/translate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`,
+      },
+      body: JSON.stringify({ language: 'hinglish' }),
+    });
+    expect(hinglishRes.status).toBe(200);
+    const hinglishBody = await hinglishRes.json();
+    expect(hinglishBody.success).toBe(true);
+    expect(hinglishBody.data.summary).toBeDefined();
+    expect(hinglishBody.data.language).toBe('hinglish');
+
+    // Translate to Hindi
+    const hindiRes = await app.request(`/api/notices/${noticeId}/translate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`,
+      },
+      body: JSON.stringify({ language: 'hindi' }),
+    });
+    expect(hindiRes.status).toBe(200);
+    const hindiBody = await hindiRes.json();
+    expect(hindiBody.success).toBe(true);
+    expect(hindiBody.data.summary).toBeDefined();
+    expect(hindiBody.data.language).toBe('hindi');
+  });
+
+  it('GET /api/demo/scenarios provides 4 isolated evaluation scenarios', async () => {
+    const res = await app.request('/api/demo/scenarios');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.length).toBe(4);
+    expect(body.data.some((s: any) => s.id === 'scenario-academic-conflict')).toBe(true);
+    expect(body.data.some((s: any) => s.id === 'scenario-point-deadline')).toBe(true);
+    expect(body.data.some((s: any) => s.id === 'scenario-zero-date-policy')).toBe(true);
+    expect(body.data.some((s: any) => s.id === 'scenario-corporate-interview')).toBe(true);
+  });
+
+  it('DELETE /api/auth/account permanently deletes user account and cascading data', async () => {
+    const deleteRes = await app.request('/api/auth/account', {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${userToken}` },
+    });
+    expect(deleteRes.status).toBe(200);
+    const deleteBody = await deleteRes.json();
+    expect(deleteBody.success).toBe(true);
+
+    // Session verification returns null
+    const sessionRes = await app.request('/api/auth/session', {
+      headers: { 'Authorization': `Bearer ${userToken}` },
+    });
+    expect((await sessionRes.json()).user).toBeNull();
+  });
+});
+
+
 
 
 

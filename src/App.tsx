@@ -9,11 +9,13 @@ import { ConflictsView } from './views/ConflictsView';
 import { ScheduleView } from './views/ScheduleView';
 import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
-import { NoticeRecord, ExtractedEvent, ConflictRecord } from './types';
+import { NoticeRecord, ExtractedEvent, ConflictRecord, ReminderRecord } from './types';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
+import { DemoSandboxModal } from './components/DemoSandboxModal';
+import { AddReminderModal } from './components/AddReminderModal';
 import { AuthUser } from './lib/auth-server';
-import { apiClient, ApiError } from './lib/api-client';
+import { apiClient } from './lib/api-client';
 
 const pathToTab = (pathname: string): NavTab => {
   const p = pathname.toLowerCase();
@@ -47,6 +49,7 @@ export const App: React.FC = () => {
   const [notices, setNotices] = useState<NoticeRecord[]>([]);
   const [events, setEvents] = useState<ExtractedEvent[]>([]);
   const [conflicts, setConflicts] = useState<ConflictRecord[]>([]);
+  const [reminders, setReminders] = useState<ReminderRecord[]>([]);
   const [activeReviewNotice, setActiveReviewNotice] = useState<NoticeRecord | null>(null);
   const [activeReviewEvents, setActiveReviewEvents] = useState<ExtractedEvent[]>([]);
   const [dbError, setDbError] = useState<string | null>(null);
@@ -57,6 +60,12 @@ export const App: React.FC = () => {
   // Authentication State
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingTab, setPendingTab] = useState<NavTab | null>(null);
+
+  // Demo Sandbox & Reminder Modals
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [addReminderModalOpen, setAddReminderModalOpen] = useState(false);
+  const [editingReminder, setEditingReminder] = useState<ReminderRecord | null>(null);
 
   // Notification Toast state
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
@@ -68,14 +77,16 @@ export const App: React.FC = () => {
     }, 4500);
   };
 
-  // Helper to get auth headers
-  const getAuthHeaders = (): Record<string, string> => {
-    const token = localStorage.getItem('notice_decoder_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  };
-
-  // Synchronize Tab & Browser History
+  // Synchronize Tab & Browser History with Strict Auth Guard
   const navigateToTab = useCallback((tab: NavTab, updateHistory: boolean = true) => {
+    // Visitor Protection: Only 'landing' is accessible without signing in
+    if (!authUser && tab !== 'landing') {
+      setPendingTab(tab);
+      setAuthModalOpen(true);
+      showToast('Please sign in or create an account to access Notice Decoder features.', 'info');
+      return;
+    }
+
     setCurrentTabState(tab);
     if (updateHistory) {
       const targetPath = tabToPath(tab);
@@ -83,18 +94,24 @@ export const App: React.FC = () => {
         window.history.pushState({ tab }, '', targetPath);
       }
     }
-  }, []);
+  }, [authUser]);
 
   // Handle browser back and forward navigation
   useEffect(() => {
     const handlePopState = () => {
       const tab = pathToTab(window.location.pathname);
-      setCurrentTabState(tab);
+      if (!authUser && tab !== 'landing') {
+        setPendingTab(tab);
+        setAuthModalOpen(true);
+        setCurrentTabState('landing');
+      } else {
+        setCurrentTabState(tab);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [authUser]);
 
   // Check existing session on startup
   useEffect(() => {
@@ -124,15 +141,17 @@ export const App: React.FC = () => {
   const refreshAppData = async (signal?: AbortSignal) => {
     setDbError(null);
     try {
-      const [noticesRes, scheduleRes, conflictsRes] = await Promise.all([
+      const [noticesRes, scheduleRes, conflictsRes, remindersRes] = await Promise.all([
         apiClient.get('/api/notices', { signal }),
         apiClient.get('/api/schedule', { signal }),
         apiClient.get('/api/conflicts', { signal }),
+        apiClient.get('/api/reminders', { signal }).catch(() => ({ data: [] })),
       ]);
 
       setNotices(noticesRes.data || []);
       setEvents(scheduleRes.data || []);
       setConflicts(conflictsRes.data?.conflicts || []);
+      setReminders(remindersRes.data || []);
     } catch (err: any) {
       if (err.name === 'AbortError') return; // Cancelled
       const message = err.message || 'Failed to connect to database service';
@@ -154,7 +173,23 @@ export const App: React.FC = () => {
     localStorage.removeItem('notice_decoder_token');
     document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     setAuthUser(null);
+    setNotices([]);
+    setEvents([]);
+    setConflicts([]);
+    setReminders([]);
     showToast('You have been signed out.', 'info');
+    navigateToTab('landing');
+  };
+
+  const handleAccountDeleted = () => {
+    localStorage.removeItem('notice_decoder_token');
+    document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    setAuthUser(null);
+    setNotices([]);
+    setEvents([]);
+    setConflicts([]);
+    setReminders([]);
+    showToast('Your account and all associated data have been permanently deleted.', 'info');
     navigateToTab('landing');
   };
 
@@ -172,7 +207,7 @@ export const App: React.FC = () => {
     setActiveReviewNotice(notice);
     setActiveReviewEvents(extractedEvents);
     navigateToTab('review');
-    showToast(`Successfully extracted ${extractedEvents.length} events from circular!`, 'success');
+    showToast(`Successfully extracted ${extractedEvents.length} events from document!`, 'success');
   };
 
   const handleOpenNotice = async (noticeId: string) => {
@@ -194,7 +229,7 @@ export const App: React.FC = () => {
     try {
       await apiClient.delete(`/api/notices/${noticeId}`);
       await refreshAppData();
-      showToast('Notice permanently deleted', 'info');
+      showToast('Document permanently deleted', 'info');
     } catch (err: any) {
       showToast(`Delete failed: ${err.message}`, 'error');
     }
@@ -206,22 +241,48 @@ export const App: React.FC = () => {
     showToast('Schedule confirmed and saved! Reviewing conflicts...', 'success');
   };
 
+  // Reminder Actions
+  const handleReminderSuccess = (savedReminder: ReminderRecord) => {
+    showToast('Personal reminder saved!', 'success');
+    refreshAppData();
+  };
+
+  const handleDeleteReminder = async (reminderId: string) => {
+    try {
+      await apiClient.delete(`/api/reminders/${reminderId}`);
+      setReminders(prev => prev.filter(r => r.id !== reminderId));
+      showToast('Reminder deleted', 'info');
+    } catch (err: any) {
+      showToast(`Failed to delete reminder: ${err.message}`, 'error');
+    }
+  };
+
+  const handleToggleReminder = async (reminderId: string, completed: boolean) => {
+    setReminders(prev => prev.map(r => r.id === reminderId ? { ...r, isCompleted: completed } : r));
+    try {
+      await apiClient.patch(`/api/reminders/${reminderId}`, { isCompleted: completed });
+    } catch (err: any) {
+      showToast('Failed to update status', 'error');
+      refreshAppData();
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 w-full overflow-x-clip">
       
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-4 sm:bottom-5 left-4 right-4 sm:left-auto sm:right-5 z-50 animate-bounce-once max-w-sm">
-          <div className={`flex items-center justify-between space-x-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold ${
+          <div className={`flex items-center justify-between space-x-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold ${
             toast.type === 'success' 
-              ? 'bg-emerald-900 text-emerald-100 border-emerald-700' 
+              ? 'bg-emerald-950 text-emerald-100 border-emerald-800' 
               : toast.type === 'error'
-                ? 'bg-red-900 text-red-100 border-red-700'
-                : 'bg-navy-900 text-slate-100 border-navy-700'
+                ? 'bg-rose-950 text-rose-100 border-rose-800'
+                : 'bg-slate-900 text-slate-100 border-slate-800'
           }`}>
             <div className="flex items-center space-x-2 min-w-0">
               {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
-              {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
+              {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}
               <span className="truncate sm:whitespace-normal">{toast.message}</span>
             </div>
             <button onClick={() => setToast(null)} className="ml-2 hover:opacity-75 shrink-0" aria-label="Dismiss notification">
@@ -247,6 +308,7 @@ export const App: React.FC = () => {
         {currentTab === 'landing' && (
           <LandingView
             onNavigate={(tab) => navigateToTab(tab)}
+            onOpenDemo={() => setDemoModalOpen(true)}
           />
         )}
 
@@ -255,8 +317,13 @@ export const App: React.FC = () => {
             notices={notices}
             events={events}
             conflicts={conflicts}
+            reminders={reminders}
             onNavigate={(tab) => navigateToTab(tab)}
             onOpenNotice={handleOpenNotice}
+            onAddReminder={() => {
+              setEditingReminder(null);
+              setAddReminderModalOpen(true);
+            }}
             dbError={dbError}
             onRetryConnection={refreshAppData}
           />
@@ -287,7 +354,18 @@ export const App: React.FC = () => {
         {currentTab === 'calendar' && (
           <ScheduleView
             events={events}
+            reminders={reminders}
             onOpenNotice={handleOpenNotice}
+            onAddReminder={() => {
+              setEditingReminder(null);
+              setAddReminderModalOpen(true);
+            }}
+            onEditReminder={(r) => {
+              setEditingReminder(r);
+              setAddReminderModalOpen(true);
+            }}
+            onDeleteReminder={handleDeleteReminder}
+            onToggleReminder={handleToggleReminder}
           />
         )}
 
@@ -303,6 +381,9 @@ export const App: React.FC = () => {
           <SettingsView
             timezone={timezone}
             onChangeTimezone={handleTimezoneChange}
+            user={authUser}
+            onSignOut={handleSignOut}
+            onAccountDeleted={handleAccountDeleted}
           />
         )}
       </main>
@@ -313,12 +394,40 @@ export const App: React.FC = () => {
       {/* Authentication Modal */}
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        onClose={() => {
+          setAuthModalOpen(false);
+          setPendingTab(null);
+        }}
         onSuccess={(user) => {
           setAuthUser(user);
           refreshAppData();
           showToast(`Welcome back, ${user.name}!`, 'success');
+          if (pendingTab) {
+            const dest = pendingTab;
+            setPendingTab(null);
+            navigateToTab(dest);
+          } else {
+            navigateToTab('dashboard');
+          }
         }}
+      />
+
+      {/* Demo Sandbox Modal */}
+      <DemoSandboxModal
+        isOpen={demoModalOpen}
+        onClose={() => setDemoModalOpen(false)}
+        onOpenAuth={() => setAuthModalOpen(true)}
+      />
+
+      {/* Add / Edit Personal Reminder Modal */}
+      <AddReminderModal
+        isOpen={addReminderModalOpen}
+        onClose={() => {
+          setAddReminderModalOpen(false);
+          setEditingReminder(null);
+        }}
+        onSuccess={handleReminderSuccess}
+        initialData={editingReminder}
       />
 
     </div>

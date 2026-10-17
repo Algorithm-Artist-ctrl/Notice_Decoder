@@ -81,7 +81,9 @@ ALTER TABLE notices ADD COLUMN IF NOT EXISTS directives JSONB DEFAULT '[]'::json
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS required_actions JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS contacts_references JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE notices ADD COLUMN IF NOT EXISTS actionable_items_count INTEGER DEFAULT 0;
-ALTER TABLE notices ADD COLUMN IF NOT EXISTS storage_path VARCHAR(512);
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS summary_english TEXT;
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS summary_hinglish TEXT;
+ALTER TABLE notices ADD COLUMN IF NOT EXISTS summary_hindi TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_notices_document_type ON notices(document_type);
 CREATE INDEX IF NOT EXISTS idx_notices_document_domain ON notices(document_domain);
@@ -94,8 +96,35 @@ CREATE INDEX IF NOT EXISTS idx_events_item_type ON events(item_type);
 CREATE TABLE IF NOT EXISTS user_preferences (
     user_id VARCHAR(64) PRIMARY KEY,
     timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Kolkata',
+    preferred_language VARCHAR(32) NOT NULL DEFAULT 'english',
     reminder_lead_time_minutes INTEGER NOT NULL DEFAULT 30,
     notification_preferences JSONB DEFAULT '{"email": false, "calendar": true, "push": false}'::jsonb,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(32) DEFAULT 'english';
+
+-- 7. Reminders Table (User-created and document-linked reminders)
+CREATE TABLE IF NOT EXISTS reminders (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    notice_id VARCHAR(64) REFERENCES notices(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    date DATE NOT NULL,
+    start_time VARCHAR(8),
+    end_time VARCHAR(8),
+    deadline_time VARCHAR(8),
+    location VARCHAR(255),
+    reminder_date_time TIMESTAMP WITH TIME ZONE,
+    recurrence VARCHAR(32) DEFAULT 'none',
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    is_manual BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_reminders_user_id ON reminders(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders(date);
+CREATE INDEX IF NOT EXISTS idx_reminders_notice_id ON reminders(notice_id);
 

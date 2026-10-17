@@ -115,6 +115,9 @@ export interface DocumentAnalysisResult {
   analysisCase?: AnalysisCase;
   documentTitle: string;
   summary: string;
+  summaryEnglish?: string;
+  summaryHinglish?: string;
+  summaryHindi?: string;
   keyInformation: string[];
   directives?: string[];
   requiredActions?: RequiredActionItem[];
@@ -122,11 +125,38 @@ export interface DocumentAnalysisResult {
   isInformationalOnly?: boolean;
   hasActionableDates: boolean;
   extractedItems: ExtractedEvent[];
+  summaries?: {
+    english: string;
+    hinglish: string;
+    hindi: string;
+  };
+}
+
+export type SummaryLanguage = 'english' | 'hinglish' | 'hindi';
+
+export interface ReminderRecord {
+  id: string;
+  userId: string;
+  noticeId?: string | null;
+  title: string;
+  description?: string | null;
+  date: string; // YYYY-MM-DD
+  startTime?: string | null; // HH:mm
+  endTime?: string | null;   // HH:mm
+  deadlineTime?: string | null; // HH:mm
+  location?: string | null;
+  reminderDateTime?: string | null; // ISO string
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly' | null;
+  isCompleted?: boolean;
+  isManual: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface UserPreferences {
   userId: string;
   timezone: string;
+  preferredLanguage?: SummaryLanguage;
   reminderLeadTimeMinutes: number;
   notificationPreferences: {
     email: boolean;
@@ -153,6 +183,9 @@ export interface NoticeRecord {
   documentDomain?: DocumentDomain;
   analysisCase?: AnalysisCase;
   summary?: string;
+  summaryEnglish?: string;
+  summaryHinglish?: string;
+  summaryHindi?: string;
   keyInformation?: string[];
   directives?: string[];
   requiredActions?: RequiredActionItem[];

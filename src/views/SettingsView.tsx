@@ -6,40 +6,65 @@ import {
   ShieldCheck, 
   Globe, 
   RefreshCw, 
-  FileText, 
   CheckCircle2, 
   AlertCircle,
-  HelpCircle
+  Download,
+  Trash2,
+  LogOut,
+  User,
+  Mail,
+  Languages,
+  Clock,
+  Bell,
+  ShieldAlert,
+  Calendar
 } from 'lucide-react';
-
 import { apiClient } from '../lib/api-client';
+import { AuthUser } from '../lib/auth-server';
+import { SummaryLanguage } from '../types';
 
 interface SettingsViewProps {
   timezone: string;
   onChangeTimezone: (tz: string) => void;
+  user: AuthUser | null;
+  onSignOut: () => void;
+  onAccountDeleted?: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTimezone }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ 
+  timezone, 
+  onChangeTimezone,
+  user,
+  onSignOut,
+  onAccountDeleted,
+}) => {
   const [healthData, setHealthData] = useState<any>(null);
-  const [isTestingDb, setIsTestingDb] = useState(false);
+  const [isTestingServices, setIsTestingServices] = useState(false);
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [leadTime, setLeadTime] = useState<number>(30);
+  const [preferredLanguage, setPreferredLanguage] = useState<SummaryLanguage>('english');
   const [notifications, setNotifications] = useState({
     email: true,
     calendar: true,
     push: false,
   });
 
+  // Account deletion modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const fetchHealth = async () => {
     try {
-      setIsTestingDb(true);
+      setIsTestingServices(true);
       const data = await apiClient.get('/api/health');
       setHealthData(data);
     } catch (e) {
-      console.error(e);
+      console.error('Health check failed:', e);
     } finally {
-      setIsTestingDb(false);
+      setIsTestingServices(false);
     }
   };
 
@@ -53,11 +78,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
         if (typeof res.data.reminderLeadTimeMinutes === 'number') {
           setLeadTime(res.data.reminderLeadTimeMinutes);
         }
+        if (res.data.preferredLanguage) {
+          setPreferredLanguage(res.data.preferredLanguage);
+        }
         if (res.data.notificationPreferences) {
           setNotifications(res.data.notificationPreferences);
         }
       }
-    } catch (e) {
+    } catch {
       // Graceful fallback
     }
   };
@@ -74,10 +102,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
       const res = await apiClient.put('/api/preferences', {
         timezone,
         reminderLeadTimeMinutes: leadTime,
+        preferredLanguage,
         notificationPreferences: notifications,
       });
       if (res.success) {
-        setSaveSuccessMsg('Preferences saved to PostgreSQL (user_preferences table)');
+        setSaveSuccessMsg('Preferences saved successfully.');
         setTimeout(() => setSaveSuccessMsg(null), 4000);
       }
     } catch (e: any) {
@@ -87,290 +116,396 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
     }
   };
 
+  const handleExportCalendar = () => {
+    window.location.href = '/api/calendar/export';
+  };
+
+  const handleDeleteAccountConfirm = async () => {
+    if (deleteConfirmationText.trim().toUpperCase() !== 'DELETE') {
+      setDeleteError('Please type DELETE to confirm account deletion.');
+      return;
+    }
+    setIsDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      const res = await apiClient.delete('/api/auth/account');
+      if (res.success) {
+        localStorage.removeItem('notice_decoder_token');
+        document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        setShowDeleteModal(false);
+        if (onAccountDeleted) {
+          onAccountDeleted();
+        } else {
+          onSignOut();
+        }
+      } else {
+        throw new Error(res.error || 'Failed to delete account.');
+      }
+    } catch (err: any) {
+      setDeleteError(err.message || 'Failed to delete account.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   const timezones = [
     'Asia/Kolkata',
     'UTC',
     'America/New_York',
     'America/Los_Angeles',
+    'America/Chicago',
     'Europe/London',
+    'Europe/Paris',
+    'Asia/Dubai',
     'Asia/Singapore',
     'Asia/Tokyo',
+    'Australia/Sydney',
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
       
-      {/* Header */}
+      {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">System Configuration & Settings</h1>
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Account & Application Settings</h1>
         <p className="text-xs text-slate-500 mt-1">
-          Timezone preferences, database connectivity status, AI engine diagnostics, and privacy policies.
+          Manage your personal profile, notification thresholds, summary languages, and security preferences.
         </p>
       </div>
 
-      {/* 1. User & Schedule Preferences (Persisted to PostgreSQL) */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* 1. User Profile & Account Card */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center space-x-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white font-extrabold text-xl flex items-center justify-center shadow-md shrink-0">
+            {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-6 h-6" />}
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-base font-bold text-slate-900">{user?.name || 'Guest User'}</h2>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Verified Account
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 flex items-center space-x-1.5 mt-0.5">
+              <Mail className="w-3.5 h-3.5 text-slate-400" />
+              <span>{user?.email || 'Sign in to access persistent cloud storage'}</span>
+            </p>
+          </div>
+        </div>
+
+        {user && (
+          <button
+            onClick={onSignOut}
+            className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition self-start sm:self-auto"
+          >
+            <LogOut className="w-3.5 h-3.5 text-slate-500" />
+            <span>Sign Out</span>
+          </button>
+        )}
+      </div>
+
+      {/* 2. Schedule, Language & Notification Preferences */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
           <div className="flex items-center space-x-2 text-slate-900 font-bold text-sm">
             <Globe className="w-4 h-4 text-brand-600 shrink-0" />
-            <h2>Schedule & Notification Preferences</h2>
+            <h2>Schedule & Language Preferences</h2>
           </div>
           {saveSuccessMsg && (
-            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1 animate-fade-in self-start sm:self-auto">
+            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1 self-start sm:self-auto">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               <span>{saveSuccessMsg}</span>
             </span>
           )}
         </div>
 
-        <p className="text-xs text-slate-500 leading-relaxed">
-          Extracted dates and events are normalized to this timezone. Preferences are securely persisted to your user profile in Neon PostgreSQL.
-        </p>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {/* Preferred Language */}
           <div>
-            <label htmlFor="tz-select" className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Primary Timezone
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center space-x-1.5">
+              <Languages className="w-3.5 h-3.5 text-slate-400" />
+              <span>Default Summary Language</span>
             </label>
             <select
-              id="tz-select"
+              value={preferredLanguage}
+              onChange={(e) => setPreferredLanguage(e.target.value as SummaryLanguage)}
+              className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-hidden"
+            >
+              <option value="english">English (Standard Professional)</option>
+              <option value="hinglish">Hinglish (Hindi in Roman Latin script)</option>
+              <option value="hindi">हिंदी (Hindi in Devanagari script)</option>
+            </select>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Initial document summaries will default to this language while strictly preserving dates, numbers, and facts.
+            </p>
+          </div>
+
+          {/* Timezone */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center space-x-1.5">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span>Primary Timezone</span>
+            </label>
+            <select
               value={timezone}
               onChange={(e) => onChangeTimezone(e.target.value)}
-              className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-300 bg-white"
+              className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-hidden"
             >
               {timezones.map(tz => (
                 <option key={tz} value={tz}>{tz}</option>
               ))}
             </select>
+            <p className="text-[11px] text-slate-400 mt-1">
+              All parsed times, intervals, and calendar exports are aligned to this timezone.
+            </p>
           </div>
 
+          {/* Conflict & Deadline Lead Time */}
           <div>
-            <label htmlFor="lead-time-select" className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Conflict & Deadline Lead Time Alert
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center space-x-1.5">
+              <Bell className="w-3.5 h-3.5 text-slate-400" />
+              <span>Conflict & Deadline Lead Time Warning</span>
             </label>
             <select
-              id="lead-time-select"
               value={leadTime}
               onChange={(e) => setLeadTime(Number(e.target.value))}
-              className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-300 bg-white"
+              className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-hidden"
             >
-              <option value={15}>15 minutes before event</option>
-              <option value={30}>30 minutes before event</option>
-              <option value={60}>1 hour before event</option>
-              <option value={120}>2 hours before event</option>
-              <option value={1440}>1 day before event</option>
+              <option value={15}>15 minutes before deadline</option>
+              <option value={30}>30 minutes before deadline (Default)</option>
+              <option value={60}>1 hour before deadline</option>
+              <option value={120}>2 hours before deadline</option>
+              <option value={1440}>1 day before deadline</option>
             </select>
           </div>
-        </div>
 
-        {/* Notification channels */}
-        <div className="pt-2 border-t border-slate-100">
-          <span className="block text-xs font-semibold text-slate-700 mb-3">Notification Channels</span>
-          <div className="flex flex-wrap gap-4 text-xs">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={notifications.email}
-                onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })}
-                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-              />
-              <span className="text-slate-700 font-medium">Email Schedule Summaries</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={notifications.calendar}
-                onChange={(e) => setNotifications({ ...notifications, calendar: e.target.checked })}
-                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-              />
-              <span className="text-slate-700 font-medium">Auto RFC-5545 .ics Sync</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={notifications.push}
-                onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
-                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-              />
-              <span className="text-slate-700 font-medium">Browser Push Notifications</span>
-            </label>
+          {/* Notification Channels */}
+          <div>
+            <span className="block text-xs font-semibold text-slate-700 mb-2">Active Channels</span>
+            <div className="space-y-2 text-xs">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notifications.email}
+                  onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })}
+                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-slate-700 font-medium">Email Schedule & Conflict Alerts</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notifications.calendar}
+                  onChange={(e) => setNotifications({ ...notifications, calendar: e.target.checked })}
+                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-slate-700 font-medium">Auto RFC-5545 .ics Calendar Sync</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notifications.push}
+                  onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
+                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-slate-700 font-medium">Desktop Browser Push Notifications</span>
+              </label>
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end pt-2 border-t border-slate-100">
           <button
             onClick={handleSavePreferences}
             disabled={isSavingPrefs}
-            className="inline-flex items-center space-x-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition disabled:opacity-50"
+            className="inline-flex items-center space-x-2 text-xs font-bold px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition disabled:opacity-50"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{isSavingPrefs ? 'Saving to Database...' : 'Save Preferences to Database'}</span>
+            <span>{isSavingPrefs ? 'Saving Changes...' : 'Save Preferences'}</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Database & Neon Cloud Backend Primitives Status */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-        <div className="flex items-center justify-between">
+      {/* 3. Calendar Export & Data Backup */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
           <div className="flex items-center space-x-2 text-slate-900 font-bold text-sm">
-            <Database className="w-4 h-4 text-emerald-600" />
-            <h2>Neon Cloud Backend Services (Lakebase Postgres, Auth, S3 & Functions)</h2>
+            <Calendar className="w-4 h-4 text-emerald-600" />
+            <h2>Export Schedule & Commitments</h2>
+          </div>
+          <p className="text-xs text-slate-500 mt-1 max-w-xl">
+            Export all confirmed events, deadlines, and personal reminders as a standard RFC-5545 <code className="font-mono text-slate-700">.ics</code> file compatible with Google Calendar, Apple Calendar, and Outlook.
+          </p>
+        </div>
+
+        <button
+          onClick={handleExportCalendar}
+          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition self-start sm:self-auto shrink-0"
+        >
+          <Download className="w-4 h-4" />
+          <span>Export .ics Calendar</span>
+        </button>
+      </div>
+
+      {/* 4. Platform Services & Engine Status */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2 text-slate-900 font-bold text-sm">
+            <Database className="w-4 h-4 text-indigo-600" />
+            <h2>System Health & Backend Services</h2>
           </div>
           <button
             onClick={fetchHealth}
-            disabled={isTestingDb}
+            disabled={isTestingServices}
             className="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center space-x-1"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isTestingDb ? 'animate-spin' : ''}`} />
-            <span>Test All Services</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isTestingServices ? 'animate-spin' : ''}`} />
+            <span>Refresh Diagnostics</span>
           </button>
         </div>
 
-        {healthData?.system?.database ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            
-            {/* Postgres */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span>Lakebase Postgres</span>
-                </span>
-                <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${
-                  healthData.system.database.connected 
-                    ? 'bg-emerald-100 text-emerald-800' 
-                    : 'bg-amber-100 text-amber-800'
-                }`}>
-                  {healthData.system.database.connected ? 'ONLINE' : 'FALLBACK'}
-                </span>
-              </div>
-              <p className="text-slate-500 text-[11px]">
-                Driver: <code className="font-mono text-slate-700">@neondatabase/serverless</code>
-              </p>
-              <p className="text-slate-600 font-mono text-[11px] truncate">
-                {healthData.system.database.databaseUrlRedacted || 'Not configured'}
-              </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-800">Database</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             </div>
-
-            {/* Neon Functions */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                  <span>Neon Functions</span>
-                </span>
-                <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-100 text-blue-800">
-                  {healthData.system.neon?.functions?.configured ? 'DEPLOYED' : 'UNCONFIGURED'}
-                </span>
-              </div>
-              <p className="text-slate-500 text-[11px]">
-                Function: <code className="font-mono text-slate-700">hello.ts</code> (Long-running compute)
-              </p>
-              <p className="text-emerald-700 font-semibold text-[11px]">
-                Status: {healthData.system.neon?.functions?.status || 'Active'}
-              </p>
-            </div>
-
-            {/* Neon Object Storage */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span>Neon Object Storage</span>
-                </span>
-                <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-purple-100 text-purple-800">
-                  {healthData.system.neon?.objectStorage?.configured ? 'ACTIVE' : 'UNCONFIGURED'}
-                </span>
-              </div>
-              <p className="text-slate-500 text-[11px]">
-                Bucket: <code className="font-mono text-slate-700">assets</code> (S3-compatible)
-              </p>
-              <p className="text-slate-600 font-mono text-[11px] truncate">
-                Endpoint: {healthData.system.neon?.objectStorage?.endpoint || 'AWS S3 SigV4'}
-              </p>
-            </div>
-
-            {/* Neon Auth */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <span>Neon Auth</span>
-                </span>
-                <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-amber-100 text-amber-800">
-                  {healthData.system.neon?.auth?.configured ? 'ACTIVE' : 'UNCONFIGURED'}
-                </span>
-              </div>
-              <p className="text-slate-500 text-[11px]">
-                Provider: Managed Better Auth (schema: <code className="font-mono text-slate-700">neon_auth</code>)
-              </p>
-              <p className="text-slate-600 font-mono text-[11px] truncate">
-                JWKS: {healthData.system.neon?.auth?.jwksUrl ? 'Verified RSA key available' : 'Disabled'}
-              </p>
-            </div>
-
-          </div>
-        ) : (
-          <div className="text-xs text-slate-400">Loading Neon services status...</div>
-        )}
-
-        <div className="text-[11px] text-slate-500 bg-blue-50 p-3 rounded-lg border border-blue-200">
-          <strong>Neon Branch Synchronization:</strong> All backend primitives (Lakebase Postgres, Auth, Object Storage, and Functions) branch together on branch <code className="font-mono bg-blue-100 text-blue-800 px-1 py-0.5 rounded">{healthData?.system?.neon?.branch || 'production'}</code>. Changes and uploaded files are isolated per branch.
-        </div>
-      </div>
-
-      {/* 3. AI & OCR Engine Diagnostics */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center space-x-2 text-slate-900 font-bold text-sm">
-          <Cpu className="w-4 h-4 text-purple-600" />
-          <h2>Entity Extraction & OCR Engine</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="font-bold text-slate-900 block">AI Parsing Provider</span>
-            <p className="text-slate-600">
-              Provider: <code className="font-mono font-semibold text-brand-700">{healthData?.system?.aiExtraction?.provider || 'Loading...'}</code>
-            </p>
-            <p className="text-slate-500 text-[11px]">
-              Accuracy Baseline: <strong>Validated against multi-domain document test suites</strong>.
-            </p>
+            <p className="text-[11px] text-emerald-700 font-medium">PostgreSQL Online</p>
+            <p className="text-[10px] text-slate-400">Encrypted at rest</p>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="font-bold text-slate-900 block">OCR Engine (Scans & Images)</span>
-            <p className="text-slate-600">
-              Engine: <code className="font-mono font-semibold text-brand-700">Tesseract.js v5 (eng)</code>
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-800">AI Extractor</span>
+              <span className="w-2 h-2 rounded-full bg-brand-500"></span>
+            </div>
+            <p className="text-[11px] text-brand-700 font-medium">
+              {healthData?.system?.aiExtraction?.model || 'Active Engine'}
             </p>
-            <p className="text-slate-500 text-[11px]">
-              Extracts text layers from PNG, JPG, and non-text PDFs with character bounding detection.
-            </p>
+            <p className="text-[10px] text-slate-400">Multilingual NLP</p>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-800">OCR Engine</span>
+              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+            </div>
+            <p className="text-[11px] text-purple-700 font-medium">Tesseract.js v5</p>
+            <p className="text-[10px] text-slate-400">PDF & Image scans</p>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-800">Storage</span>
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            </div>
+            <p className="text-[11px] text-blue-700 font-medium">Isolated Assets</p>
+            <p className="text-[10px] text-slate-400">10 MB max size limit</p>
           </div>
         </div>
       </div>
 
-      {/* 4. Privacy, Data Retention & Document Boundaries */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+      {/* 5. Privacy, Sandboxing & Security Policies */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs space-y-3">
         <div className="flex items-center space-x-2 text-slate-900 font-bold text-sm">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <h2>Data Privacy & Retention Policy</h2>
+          <h2>Data Privacy & Sandboxing Policy</h2>
         </div>
-
-        <div className="text-xs text-slate-600 space-y-3 leading-relaxed">
+        <div className="text-xs text-slate-600 space-y-2 leading-relaxed">
           <p>
-            • <strong>Untrusted Input Protection:</strong> Notice texts are treated strictly as untrusted data. Any prompt injections or system commands embedded inside uploaded circulars are discarded.
+            • <strong>Untrusted Document Protection:</strong> Notice texts are treated strictly as untrusted data. Embedded instructions or prompt injections inside uploaded notices are safely neutralized.
           </p>
           <p>
-            • <strong>No Unsolicited Data Sharing:</strong> Your notice data is never shared with third-party advertisers. All records are stored either in your private Neon database or your local persistent workspace.
+            • <strong>Strict User Isolation:</strong> Your notices, events, and personal reminders are private to your authenticated account and are never exposed to other users or search engines.
           </p>
           <p>
-            • <strong>10 MB Enforced Size Limit:</strong> File uploads are constrained to 10 MB per document on both client and server to prevent denial of service and memory exhaustion.
-          </p>
-          <p>
-            • <strong>Permanent Deletion:</strong> Clicking "Delete Notice" permanently removes the circular, its extracted candidates, and all associated conflict records.
+            • <strong>No Unsolicited Advertising:</strong> Your document data is never monetized or sold to third parties.
           </p>
         </div>
       </div>
+
+      {/* 6. Danger Zone: Account Deletion */}
+      <div className="bg-rose-50/60 p-5 sm:p-6 rounded-3xl border border-rose-200/80 shadow-xs space-y-4">
+        <div className="flex items-center space-x-2 text-rose-900 font-bold text-sm">
+          <ShieldAlert className="w-4 h-4 text-rose-600" />
+          <h2>Danger Zone: Account Deletion</h2>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <p className="text-xs text-rose-800 leading-relaxed max-w-xl">
+            Permanently delete your account along with all uploaded notices, extracted events, custom reminders, conflict records, and saved preferences. This action cannot be undone.
+          </p>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition self-start sm:self-auto shrink-0"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete Account & Data</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Account Deletion Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-5 animate-scale-up">
+            <div className="flex items-center space-x-3 text-rose-600">
+              <div className="w-10 h-10 rounded-2xl bg-rose-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Confirm Permanent Deletion</h3>
+                <p className="text-xs text-slate-500">This action is irreversible</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              All your notices, calendar entries, reminders, and profile data will be permanently wiped from the database.
+            </p>
+
+            {deleteError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {deleteError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Type <strong className="text-rose-600 font-mono">DELETE</strong> to confirm:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                placeholder="DELETE"
+                className="w-full text-xs font-mono font-bold px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 outline-hidden"
+              />
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmationText('');
+                  setDeleteError(null);
+                }}
+                disabled={isDeletingAccount}
+                className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccountConfirm}
+                disabled={isDeletingAccount || deleteConfirmationText.trim().toUpperCase() !== 'DELETE'}
+                className="px-5 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition disabled:opacity-40"
+              >
+                {isDeletingAccount ? 'Deleting Everything...' : 'Permanently Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
