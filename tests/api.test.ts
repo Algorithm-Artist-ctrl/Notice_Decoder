@@ -366,6 +366,64 @@ describe('Authentication & User Isolation Suite', () => {
     const sessionBody = await sessionRes.json();
     expect(sessionBody.user).toBeNull();
   });
+
+  it('guarantees anonymous users only see sample demo notices in /api/notices', async () => {
+    // 1. Create a private notice for User B
+    const bUpload = await app.request('/api/notices/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenB}`,
+      },
+      body: JSON.stringify({
+        title: 'User B Private Circular',
+        text: 'Exam for Student B on 12 Dec 2026 from 09:00 to 12:00 in Room 101.',
+      }),
+    });
+    expect(bUpload.status).toBe(200);
+    const bNoticeId = (await bUpload.json()).data.notice.id;
+
+    // 2. Anonymous request without Authorization header
+    const anonRes = await app.request('/api/notices');
+    expect(anonRes.status).toBe(200);
+    const anonBody = await anonRes.json();
+    
+    // Every single notice returned to anonymous caller must be a demo notice!
+    expect(anonBody.data.length).toBeGreaterThan(0);
+    expect(anonBody.data.every((n: any) => n.isDemo === true)).toBe(true);
+    expect(anonBody.data.some((n: any) => n.id === bNoticeId)).toBe(false);
+
+    // Clean up
+    await app.request(`/api/notices/${bNoticeId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${tokenB}` },
+    });
+  });
+
+  it('prevents deletion of public sample notices', async () => {
+    const deleteDemoRes = await app.request('/api/notices/demo-notice-ps02', {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${tokenB}` },
+    });
+    expect(deleteDemoRes.status).toBe(403);
+    const body = await deleteDemoRes.json();
+    expect(body.error).toContain('sample notices cannot be deleted');
+  });
+
+  it('rejects files with invalid PDF magic bytes', async () => {
+    const formData = new FormData();
+    const fakePdf = new Blob(['NotARealPdfHeader12345'], { type: 'application/pdf' });
+    formData.append('file', fakePdf, 'corrupted.pdf');
+
+    const res = await app.request('/api/notices/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('does not match a valid PDF file signature');
+  });
 });
+
 
 

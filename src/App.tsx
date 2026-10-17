@@ -13,6 +13,7 @@ import { NoticeRecord, ExtractedEvent, ConflictRecord } from './types';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { AuthUser } from './lib/auth-server';
+import { apiClient, ApiError } from './lib/api-client';
 
 const pathToTab = (pathname: string): NavTab => {
   const p = pathname.toLowerCase();
@@ -100,10 +101,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const token = localStorage.getItem('notice_decoder_token');
     if (token) {
-      fetch('/api/auth/session', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-        .then(res => res.json())
+      apiClient.get('/api/auth/session')
         .then(data => {
           if (data.user) {
             setAuthUser(data.user);
@@ -115,48 +113,36 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Fetch all state from API
-  const refreshAppData = async () => {
+  // Fetch all state from API with safe cancellation
+  const refreshAppData = async (signal?: AbortSignal) => {
     setDbError(null);
     try {
-      const headers = getAuthHeaders();
       const [noticesRes, scheduleRes, conflictsRes] = await Promise.all([
-        fetch('/api/notices', { headers }),
-        fetch('/api/schedule', { headers }),
-        fetch('/api/conflicts', { headers }),
+        apiClient.get('/api/notices', { signal }),
+        apiClient.get('/api/schedule', { signal }),
+        apiClient.get('/api/conflicts', { signal }),
       ]);
 
-      if (noticesRes.ok) {
-        const data = await noticesRes.json();
-        setNotices(data.data || []);
-      } else {
-        const err = await noticesRes.json().catch(() => ({}));
-        setDbError(err.error || 'Failed to load notices from database');
-      }
-
-      if (scheduleRes.ok) {
-        const data = await scheduleRes.json();
-        setEvents(data.data || []);
-      }
-
-      if (conflictsRes.ok) {
-        const data = await conflictsRes.json();
-        setConflicts(data.data?.conflicts || []);
-      }
+      setNotices(noticesRes.data || []);
+      setEvents(scheduleRes.data || []);
+      setConflicts(conflictsRes.data?.conflicts || []);
     } catch (err: any) {
-      setDbError(`Could not connect to API server: ${err.message}`);
-      console.warn('API connection error:', err.message);
+      if (err.name === 'AbortError') return; // Cancelled
+      const message = err.message || 'Failed to connect to database service';
+      setDbError(message);
+      console.warn('API data fetch warning:', message);
     }
   };
 
   useEffect(() => {
-    refreshAppData();
+    const controller = new AbortController();
+    refreshAppData(controller.signal);
+    return () => controller.abort();
   }, [authUser]);
 
   const handleSignOut = async () => {
     try {
-      const headers = getAuthHeaders();
-      await fetch('/api/auth/sign-out', { method: 'POST', headers });
+      await apiClient.post('/api/auth/sign-out');
     } catch {}
     localStorage.removeItem('notice_decoder_token');
     document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
@@ -174,9 +160,8 @@ export const App: React.FC = () => {
   const handleLoadDemoNotice = async () => {
     try {
       setIsDemoLoading(true);
-      const res = await fetch('/api/demo/seed', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to seed demo data');
+      const data = await apiClient.post('/api/demo/seed');
+      if (!data.success) throw new Error(data.error || 'Failed to seed demo data');
 
       await refreshAppData();
       setActiveReviewNotice(data.data.notice);
@@ -200,11 +185,8 @@ export const App: React.FC = () => {
 
   const handleOpenNotice = async (noticeId: string) => {
     try {
-      const res = await fetch(`/api/notices/${noticeId}`, {
-        headers: getAuthHeaders(),
-      });
-      const data = await res.json();
-      if (res.ok && data.data) {
+      const data = await apiClient.get(`/api/notices/${noticeId}`);
+      if (data.data) {
         setActiveReviewNotice(data.data.notice);
         setActiveReviewEvents(data.data.events);
         navigateToTab('review');
@@ -218,16 +200,9 @@ export const App: React.FC = () => {
 
   const handleDeleteNotice = async (noticeId: string) => {
     try {
-      const res = await fetch(`/api/notices/${noticeId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
-      if (res.ok) {
-        await refreshAppData();
-        showToast('Notice permanently deleted', 'info');
-      } else {
-        showToast('Failed to delete notice', 'error');
-      }
+      await apiClient.delete(`/api/notices/${noticeId}`);
+      await refreshAppData();
+      showToast('Notice permanently deleted', 'info');
     } catch (err: any) {
       showToast(`Delete failed: ${err.message}`, 'error');
     }

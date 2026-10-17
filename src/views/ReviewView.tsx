@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { NoticeRecord, ExtractedEvent, EventCategory, EventKind } from '../types';
 import { detectConflicts, format12Hour } from '../lib/conflict-engine';
+import { apiClient } from '../lib/api-client';
 
 interface ReviewViewProps {
   notice: NoticeRecord;
@@ -94,26 +95,14 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
   const handleSaveAndConfirm = async () => {
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('notice_decoder_token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       // 1. Send patched events to server
       for (const ev of events) {
-        await fetch(`/api/events/${ev.id}`, {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify(ev),
-        });
+        await apiClient.patch(`/api/events/${ev.id}`, ev);
       }
 
       // 2. Mark notice as confirmed
-      const res = await fetch(`/api/notices/${notice.id}/confirm`, {
-        method: 'POST',
-        headers,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to confirm events');
+      const result = await apiClient.post(`/api/notices/${notice.id}/confirm`);
+      if (!result.success) throw new Error(result.error || 'Failed to confirm events');
 
       onConfirm(events);
     } catch (err: any) {

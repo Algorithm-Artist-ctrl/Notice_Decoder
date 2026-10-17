@@ -32,20 +32,47 @@ const app = new Hono();
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-request-id'],
   credentials: true,
 }));
+
+// Global error handler: guarantees clean, structured JSON errors on any unhandled exception
+app.onError((err, c) => {
+  console.error(`[Server Error] ${c.req.method} ${c.req.path}:`, err);
+  const status = (err as any).status || 500;
+  return c.json({
+    success: false,
+    error: err.message || 'Internal Server Error',
+    path: c.req.path,
+    timestamp: new Date().toISOString(),
+  }, status);
+});
 
 // Test database connection at startup
 testNeonConnection().then(status => {
   if (status.connected) {
     console.log('✅ Connected to Neon PostgreSQL:', status.databaseUrlRedacted);
   } else {
-    console.log('ℹ️ Running in local resilient store mode:', status.error || 'No remote DB configured');
+    console.log('ℹ️ Running in resilient mode:', status.error || 'No remote DB configured');
   }
 }).catch(err => {
   console.warn('Startup database test warning:', err.message);
 });
+
+/**
+ * File validation helpers
+ */
+function isValidPdf(buf: Buffer): boolean {
+  return buf.length >= 4 && buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46; // %PDF
+}
+
+function isValidPng(buf: Buffer): boolean {
+  return buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+}
+
+function isValidJpeg(buf: Buffer): boolean {
+  return buf.length >= 3 && buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+}
 
 /**
  * Health check & diagnostics endpoint
@@ -187,7 +214,9 @@ app.post('/api/auth/sign-out', async (c) => {
    ========================================================================= */
 
 /**
- * List all saved notices with user isolation
+ * List all notices with user isolation:
+ * - Authenticated: user's private notices + public demo notices
+ * - Anonymous: ONLY public demo notices
  */
 app.get('/api/notices', async (c) => {
   try {
@@ -200,7 +229,7 @@ app.get('/api/notices', async (c) => {
 });
 
 /**
- * Get notice by ID with ownership check
+ * Get notice by ID with strict ownership check
  */
 app.get('/api/notices/:id', async (c) => {
   try {
@@ -218,17 +247,21 @@ app.get('/api/notices/:id', async (c) => {
 });
 
 /**
- * Delete notice
+ * Delete notice:
+ * Requires authentication and owner verification. Forbids deleting sample demo notices.
  */
 app.delete('/api/notices/:id', async (c) => {
   try {
     const id = c.req.param('id');
     const user = await verifySession(c);
-    const success = await NoticeStore.deleteNotice(id, user?.id);
-    if (!success) {
-      return c.json({ success: false, error: 'Notice not found or unauthorized' }, 403);
+    if (!user) {
+      return c.json({ success: false, error: 'Authentication required to delete notices' }, 401);
     }
-    return c.json({ success: true });
+    const success = await NoticeStore.deleteNotice(id, user.id);
+    if (!success) {
+      return c.json({ success: false, error: 'Notice not found, unauthorized, or sample notices cannot be deleted' }, 403);
+    }
+    return c.json({ success: true, message: 'Notice deleted successfully' });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }
@@ -241,6 +274,10 @@ app.get('/api/notices/:id/events', async (c) => {
   try {
     const id = c.req.param('id');
     const user = await verifySession(c);
+    const notice = await NoticeStore.getNoticeById(id, user?.id);
+    if (!notice) {
+      return c.json({ success: false, error: 'Notice not found or unauthorized' }, 404);
+    }
     const events = await NoticeStore.getEventsByNoticeId(id, user?.id);
     return c.json({ success: true, data: events });
   } catch (err: any) {
@@ -331,7 +368,8 @@ app.get('/api/conflicts', async (c) => {
 
 /**
  * Upload notice and process extraction
- * Enforces 10MB limit on client and server
+ * Enforces 10MB limit, validates file magic bytes, cleans up OCR workers,
+ * and reports extraction method accurately.
  */
 app.post('/api/notices/upload', async (c) => {
   try {
@@ -389,12 +427,17 @@ app.post('/api/notices/upload', async (c) => {
         const lowerName = fileName.toLowerCase();
         if (lowerName.endsWith('.pdf')) {
           fileType = 'pdf';
+          if (!isValidPdf(buffer)) {
+            return c.json({ success: false, error: 'The uploaded file does not match a valid PDF file signature.' }, 400);
+          }
           try {
             const parsedPdf = await pdfParse(buffer);
-            rawText = parsedPdf.text;
+            rawText = parsedPdf.text || '';
             if (rawText.trim().length < 20) {
-              console.log('PDF has minimal text layer; invoking Tesseract OCR fallback...');
-              rawText = parsedPdf.text || 'Scanned PDF notice uploaded.';
+              return c.json({
+                success: false,
+                error: 'The uploaded PDF does not contain selectable text (scanned document or image-only PDF). Please upload a clear image (PNG or JPEG) to enable OCR text recognition, or provide a PDF with selectable text.',
+              }, 400);
             }
           } catch (pdfErr: any) {
             console.error('PDF parsing error:', pdfErr);
@@ -402,14 +445,20 @@ app.post('/api/notices/upload', async (c) => {
           }
         } else if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
           fileType = 'image';
+          if (!isValidPng(buffer) && !isValidJpeg(buffer)) {
+            return c.json({ success: false, error: 'The uploaded file does not match a valid PNG or JPEG image signature.' }, 400);
+          }
+          const worker = await createWorker('eng');
           try {
-            const worker = await createWorker('eng');
             const ret = await worker.recognize(buffer);
-            await worker.terminate();
             rawText = ret.data.text;
           } catch (ocrErr: any) {
             console.error('OCR processing error:', ocrErr);
             return c.json({ success: false, error: 'OCR processing failed on uploaded image.' }, 400);
+          } finally {
+            try {
+              await worker.terminate();
+            } catch {}
           }
         } else {
           return c.json({
@@ -473,12 +522,16 @@ app.post('/api/notices/upload', async (c) => {
       ).catch(e => console.warn('Background Neon storage upload warning:', e.message));
     }
 
+    const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 5);
+    const extractionMethod = hasGeminiKey ? 'google_gemini_2.5_flash' : 'deterministic_heuristic_nlp';
+
     return c.json({
       success: true,
       message: 'Notice extracted successfully',
       data: {
         notice,
         events,
+        extractionMethod,
       },
     });
   } catch (err: any) {
@@ -535,20 +588,23 @@ app.post('/api/demo/seed', async (c) => {
 const distDir = path.resolve(process.cwd(), 'dist');
 if (fs.existsSync(distDir)) {
   app.use('/*', serveStatic({ root: './dist' }));
-
-  // SPA fallback for client-side navigation
-  app.get('*', (c) => {
-    if (c.req.path.startsWith('/api')) {
-      return c.json({ success: false, error: 'API endpoint not found' }, 404);
-    }
-    const htmlFile = path.join(distDir, 'index.html');
-    if (fs.existsSync(htmlFile)) {
-      const html = fs.readFileSync(htmlFile, 'utf-8');
-      return c.html(html);
-    }
-    return c.text('Notice Decoder build not found. Run npm run build.', 404);
-  });
 }
+
+// Global 404 handler: returns JSON for /api/* routes, and SPA index.html for UI navigation
+app.notFound((c) => {
+  if (c.req.path.startsWith('/api')) {
+    return c.json({
+      success: false,
+      error: `API route not found: ${c.req.method} ${c.req.path}`,
+    }, 404);
+  }
+  const htmlFile = path.join(distDir, 'index.html');
+  if (fs.existsSync(htmlFile)) {
+    const html = fs.readFileSync(htmlFile, 'utf-8');
+    return c.html(html);
+  }
+  return c.text('Notice Decoder build not found. Run npm run build.', 404);
+});
 
 export { app };
 

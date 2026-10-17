@@ -1,21 +1,19 @@
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 
-const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+const isProduction = 
+  process.env.NODE_ENV === 'production' || 
+  Boolean(process.env.RENDER) || 
+  Boolean(process.env.PORT) ||
+  fs.existsSync(path.resolve(process.cwd(), 'dist/index.html'));
 
 if (isProduction) {
   console.log('🚀 [Notice Decoder] Production / Cloud environment detected.');
-  console.log('📡 Starting full-stack unified Hono server (API + Static Assets)...');
+  console.log('📡 Starting full-stack unified Hono server directly in process...');
 
-  const serverProc = spawn('npx', ['tsx', 'server/index.ts'], {
-    stdio: 'inherit',
-    env: process.env,
-    shell: true,
-  });
-
-  serverProc.on('exit', (code) => {
-    process.exit(code ?? 0);
-  });
+  // Directly run server/index.ts in the current process
+  await import('../server/index');
 } else {
   console.log('⚡ [Notice Decoder] Local Development Environment');
   console.log('📡 Starting Hono API Server on http://0.0.0.0:3000 and Vite Dev Server on http://0.0.0.0:5173...');

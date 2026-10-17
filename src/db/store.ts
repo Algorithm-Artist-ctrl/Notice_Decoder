@@ -12,6 +12,8 @@ interface LocalStoreData {
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'notices_store.json');
 
+const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+
 function ensureDataFile(): LocalStoreData {
   if (!fs.existsSync(DATA_DIR)) {
     try {
@@ -104,12 +106,18 @@ export class NoticeStore {
             error_message = EXCLUDED.error_message,
             updated_at = EXCLUDED.updated_at;
         `;
+        return notice;
       } catch (err: any) {
-        console.warn('Neon notice save warning:', err.message);
+        console.error('Neon saveNotice failed:', err);
+        if (isProduction) {
+          throw new Error(`Database save failed: ${err.message}`);
+        }
       }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
     }
 
-    // Always mirror to local store for offline/test reliability
+    // Mirror to local store for offline/test reliability when not in strict production
     const data = ensureDataFile();
     const idx = data.notices.findIndex(n => n.id === notice.id);
     if (idx >= 0) {
@@ -122,7 +130,9 @@ export class NoticeStore {
   }
 
   /**
-   * Retrieves notices with optional user isolation
+   * Retrieves notices with user isolation:
+   * - Authenticated user: returns their notices + sample demo notices
+   * - Anonymous user: returns ONLY sample demo notices
    */
   static async listNotices(userId?: string): Promise<NoticeRecord[]> {
     const neon = getNeonClient();
@@ -140,11 +150,13 @@ export class NoticeStore {
             ORDER BY n.created_at DESC;
           `;
         } else {
+          // Anonymous visitor: ONLY sample demo notices
           rows = await neon`
             SELECT n.*, 
                    COUNT(DISTINCT e.id)::int as extracted_events_count
             FROM notices n
             LEFT JOIN events e ON e.notice_id = n.id
+            WHERE n.is_demo = TRUE
             GROUP BY n.id
             ORDER BY n.created_at DESC;
           `;
@@ -171,14 +183,21 @@ export class NoticeStore {
         }
         return notices;
       } catch (err: any) {
-        console.warn('Neon listNotices query warning, falling back to local file:', err.message);
+        console.error('Neon listNotices failed:', err);
+        if (isProduction) {
+          throw new Error(`Database query failed: ${err.message}`);
+        }
       }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
     }
 
     const data = ensureDataFile();
     let filtered = data.notices;
     if (userId) {
       filtered = filtered.filter(n => n.userId === userId || n.isDemo);
+    } else {
+      filtered = filtered.filter(n => n.isDemo);
     }
 
     return filtered.map(n => {
@@ -193,7 +212,7 @@ export class NoticeStore {
   }
 
   /**
-   * Retrieves single notice by ID with ownership check
+   * Retrieves single notice by ID with strict ownership check
    */
   static async getNoticeById(id: string, userId?: string): Promise<NoticeRecord | null> {
     const neon = getNeonClient();
@@ -206,7 +225,7 @@ export class NoticeStore {
           const isDemo = Boolean(r.is_demo);
 
           // Enforce ownership: reject if private and doesn't belong to current user
-          if (userId && recordUserId && recordUserId !== userId && !isDemo) {
+          if (!isDemo && (!userId || recordUserId !== userId)) {
             return null;
           }
 
@@ -228,9 +247,15 @@ export class NoticeStore {
             updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : new Date().toISOString(),
           };
         }
+        return null;
       } catch (err: any) {
-        console.warn('Neon getNoticeById warning, falling back to local store:', err.message);
+        console.error('Neon getNoticeById failed:', err);
+        if (isProduction) {
+          throw new Error(`Database query failed: ${err.message}`);
+        }
       }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
     }
 
     const notices = await this.listNotices(userId);
@@ -244,24 +269,36 @@ export class NoticeStore {
     const neon = getNeonClient();
     if (neon) {
       try {
-        if (userId) {
-          // Verify ownership first
-          const check = await neon`SELECT user_id, is_demo FROM notices WHERE id = ${id} LIMIT 1;`;
-          if (check.length > 0) {
-            const row = check[0];
-            if (row.user_id && row.user_id !== userId && !row.is_demo) {
-              return false;
-            }
-          }
+        // Verify ownership and forbid deleting sample demo notices
+        const check = await neon`SELECT user_id, is_demo FROM notices WHERE id = ${id} LIMIT 1;`;
+        if (check.length === 0) return false;
+
+        const row = check[0];
+        if (row.is_demo) {
+          return false; // Cannot delete public demo notices
         }
+        if (!userId || (row.user_id && row.user_id !== userId)) {
+          return false; // Unauthorized
+        }
+
         await neon`DELETE FROM events WHERE notice_id = ${id};`;
         await neon`DELETE FROM notices WHERE id = ${id};`;
+        return true;
       } catch (e: any) {
-        console.warn('Neon delete failed:', e.message);
+        console.error('Neon deleteNotice failed:', e);
+        if (isProduction) {
+          throw new Error(`Database delete failed: ${e.message}`);
+        }
       }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
     }
 
     const data = ensureDataFile();
+    const notice = data.notices.find(n => n.id === id);
+    if (!notice || notice.isDemo) return false;
+    if (userId && notice.userId && notice.userId !== userId) return false;
+
     data.notices = data.notices.filter(n => n.id !== id);
     data.events = data.events.filter(e => e.noticeId !== id);
     writeDataFile(data);
@@ -276,8 +313,8 @@ export class NoticeStore {
 
     const neon = getNeonClient();
     if (neon) {
-      for (const ev of events) {
-        try {
+      try {
+        for (const ev of events) {
           const ownerId = ev.userId || userId || null;
           await neon`
             INSERT INTO events (
@@ -320,10 +357,16 @@ export class NoticeStore {
               review_reasons = EXCLUDED.review_reasons,
               updated_at = CURRENT_TIMESTAMP;
           `;
-        } catch (e: any) {
-          console.warn('Neon event insert error:', e.message);
+        }
+        return events;
+      } catch (e: any) {
+        console.error('Neon saveEvents failed:', e);
+        if (isProduction) {
+          throw new Error(`Database saveEvents failed: ${e.message}`);
         }
       }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
     }
 
     const data = ensureDataFile();
@@ -355,12 +398,15 @@ export class NoticeStore {
           WHERE notice_id = ${noticeId}
           ORDER BY date ASC, start_time ASC;
         `;
-        if (rows && rows.length > 0) {
-          return rows.map(mapRowToEvent);
-        }
+        return rows.map(mapRowToEvent);
       } catch (err: any) {
-        console.warn('Neon getEventsByNoticeId query warning, falling back to local file:', err.message);
+        console.error('Neon getEventsByNoticeId failed:', err);
+        if (isProduction) {
+          throw new Error(`Database query failed: ${err.message}`);
+        }
       }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
     }
 
     const data = ensureDataFile();
@@ -386,28 +432,34 @@ export class NoticeStore {
             ORDER BY date ASC, start_time ASC;
           `;
         } else {
+          // Anonymous visitor: ONLY sample demo confirmed events
           rows = await neon`
             SELECT id, notice_id, user_id, title, category, kind, date::text as date_str,
                    start_time, end_time, deadline_time, venue, department_or_audience,
                    source_text_evidence, confidence, review_required, review_reasons,
                    is_confirmed, timezone, created_at, updated_at
             FROM events
-            WHERE is_confirmed = true
+            WHERE is_confirmed = true AND notice_id = 'demo-notice-ps02'
             ORDER BY date ASC, start_time ASC;
           `;
         }
-        if (rows && rows.length > 0) {
-          return rows.map(mapRowToEvent);
-        }
+        return rows.map(mapRowToEvent);
       } catch (err: any) {
-        console.warn('Neon getAllConfirmedEvents query warning, falling back to local file:', err.message);
+        console.error('Neon getAllConfirmedEvents failed:', err);
+        if (isProduction) {
+          throw new Error(`Database query failed: ${err.message}`);
+        }
       }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
     }
 
     const data = ensureDataFile();
     let events = data.events.filter(e => e.isConfirmed);
     if (userId) {
       events = events.filter(e => e.userId === userId || e.noticeId === 'demo-notice-ps02');
+    } else {
+      events = events.filter(e => e.noticeId === 'demo-notice-ps02');
     }
     return events;
   }
@@ -459,9 +511,15 @@ export class NoticeStore {
           `;
           return merged;
         }
+        return null;
       } catch (err: any) {
-        console.warn('Neon updateEvent error, falling back to local file:', err.message);
+        console.error('Neon updateEvent failed:', err);
+        if (isProduction) {
+          throw new Error(`Database update failed: ${err.message}`);
+        }
       }
+    } else if (isProduction) {
+      throw new Error('Neon database is required in production environment.');
     }
 
     const data = ensureDataFile();
@@ -518,7 +576,6 @@ export class NoticeStore {
     const demoNoticeId = 'demo-notice-ps02';
     const demoNotice: NoticeRecord = {
       id: demoNoticeId,
-      userId: 'public_demo',
       title: '[Sample] Academic Schedule & Lab Circular (November 2026)',
       rawText: `All III-year CSE students: Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204. Lab records must be submitted to the department office by 12:00 noon on 13 Nov. A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.`,
       fileName: 'Academic_Circular_Sample.pdf',
@@ -526,17 +583,30 @@ export class NoticeStore {
       fileSize: 42350,
       status: 'confirmed',
       extractedEventsCount: 3,
-      conflictsCount: 2,
+      conflictsCount: 0,
       isDemo: true,
-      createdAt: '2026-10-15T10:00:00Z',
-      updatedAt: '2026-10-15T10:05:00Z',
+      createdAt: '2026-10-15T10:00:00.000Z',
+      updatedAt: new Date().toISOString(),
     };
+
+    const neon = getNeonClient();
+    if (neon) {
+      try {
+        await neon`DELETE FROM events WHERE notice_id = ${demoNoticeId};`;
+      } catch (err: any) {
+        console.warn('Neon clear demo events warning:', err.message);
+      }
+    }
+
+    const data = ensureDataFile();
+    data.events = data.events.filter(e => e.noticeId !== demoNoticeId);
+    data.notices = data.notices.filter(n => n.id !== demoNoticeId);
+    writeDataFile(data);
 
     const demoEvents: ExtractedEvent[] = [
       {
-        id: 'demo-ev-1',
+        id: 'ev-demo-1',
         noticeId: demoNoticeId,
-        userId: 'public_demo',
         title: 'Internal Test 2',
         category: 'exam',
         kind: 'timed_event',
@@ -547,7 +617,6 @@ export class NoticeStore {
         venue: 'Room 204',
         departmentOrAudience: 'III-year CSE',
         sourceTextEvidence: 'Internal Test 2 will be held on 13 Nov 2026 from 10:00 AM to 11:30 AM in Room 204.',
-        sourceBoundingBox: { page: 1, x: 42, y: 110, width: 480, height: 24 },
         confidence: 0.98,
         reviewRequired: false,
         reviewReasons: [],
@@ -555,30 +624,8 @@ export class NoticeStore {
         timezone: 'Asia/Kolkata',
       },
       {
-        id: 'demo-ev-2',
+        id: 'ev-demo-2',
         noticeId: demoNoticeId,
-        userId: 'public_demo',
-        title: 'Lab Record Submission Deadline',
-        category: 'deadline',
-        kind: 'deadline_point',
-        date: '2026-11-13',
-        startTime: '12:00',
-        endTime: null,
-        deadlineTime: '12:00',
-        venue: 'Department Office',
-        departmentOrAudience: 'III-year CSE',
-        sourceTextEvidence: 'Lab records must be submitted to the department office by 12:00 noon on 13 Nov.',
-        sourceBoundingBox: { page: 1, x: 42, y: 140, width: 460, height: 24 },
-        confidence: 0.96,
-        reviewRequired: false,
-        reviewReasons: [],
-        isConfirmed: true,
-        timezone: 'Asia/Kolkata',
-      },
-      {
-        id: 'demo-ev-3',
-        noticeId: demoNoticeId,
-        userId: 'public_demo',
         title: 'Guest Lecture: AI in Healthcare',
         category: 'lecture',
         kind: 'timed_event',
@@ -589,8 +636,26 @@ export class NoticeStore {
         venue: 'Seminar Hall',
         departmentOrAudience: 'III-year CSE',
         sourceTextEvidence: 'A guest lecture on “AI in Healthcare” is scheduled on 13 Nov, 11:00 AM to 12:30 PM, Seminar Hall.',
-        sourceBoundingBox: { page: 1, x: 42, y: 170, width: 495, height: 24 },
-        confidence: 0.97,
+        confidence: 0.95,
+        reviewRequired: false,
+        reviewReasons: [],
+        isConfirmed: true,
+        timezone: 'Asia/Kolkata',
+      },
+      {
+        id: 'ev-demo-3',
+        noticeId: demoNoticeId,
+        title: 'Lab Record Submission Deadline',
+        category: 'deadline',
+        kind: 'deadline_point',
+        date: '2026-11-13',
+        startTime: '12:00',
+        endTime: null,
+        deadlineTime: '12:00',
+        venue: 'Department Office',
+        departmentOrAudience: 'III-year CSE',
+        sourceTextEvidence: 'Lab records must be submitted to the department office by 12:00 noon on 13 Nov.',
+        confidence: 0.96,
         reviewRequired: false,
         reviewReasons: [],
         isConfirmed: true,
@@ -599,6 +664,6 @@ export class NoticeStore {
     ];
 
     await this.saveNotice(demoNotice);
-    await this.saveEvents(demoEvents, 'public_demo');
+    await this.saveEvents(demoEvents);
   }
 }

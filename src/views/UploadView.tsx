@@ -11,6 +11,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { NoticeRecord, ExtractedEvent } from '../types';
+import { apiClient } from '../lib/api-client';
 
 interface UploadViewProps {
   onUploadSuccess: (notice: NoticeRecord, events: ExtractedEvent[]) => void;
@@ -98,7 +99,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
       setProgressPercent(15);
       await new Promise(r => setTimeout(r, 200));
 
-      let response: Response;
+      let result: any;
 
       if (activeTab === 'file') {
         if (!selectedFile) {
@@ -113,15 +114,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         formData.append('file', selectedFile);
         formData.append('title', title || selectedFile.name);
 
-        const token = localStorage.getItem('notice_decoder_token');
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        response = await fetch('/api/notices/upload', {
-          method: 'POST',
-          headers,
-          body: formData,
-        });
+        result = await apiClient.upload('/api/notices/upload', formData);
       } else {
         if (!rawText.trim()) {
           throw new Error('Please enter or paste the notice text');
@@ -130,17 +123,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         setProgressStage('Parsing unstructured text segments...');
         setProgressPercent(40);
 
-        const token = localStorage.getItem('notice_decoder_token');
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        response = await fetch('/api/notices/upload', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            title: title || 'Pasted Notice',
-            text: rawText,
-          }),
+        result = await apiClient.post('/api/notices/upload', {
+          title: title || 'Pasted Notice',
+          text: rawText,
         });
       }
 
@@ -149,8 +134,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
       setProgressPercent(70);
       await new Promise(r => setTimeout(r, 250));
 
-      const result = await response.json();
-      if (!response.ok || !result.success) {
+      if (!result.success || !result.data) {
         throw new Error(result.error || 'Failed to process notice document');
       }
 

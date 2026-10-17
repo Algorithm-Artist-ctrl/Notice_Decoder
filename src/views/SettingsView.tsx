@@ -12,6 +12,8 @@ import {
   HelpCircle
 } from 'lucide-react';
 
+import { apiClient } from '../lib/api-client';
+
 interface SettingsViewProps {
   timezone: string;
   onChangeTimezone: (tz: string) => void;
@@ -24,8 +26,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ timezone, onChangeTi
   const fetchHealth = async () => {
     try {
       setIsTestingDb(true);
-      const res = await fetch('/api/health');
-      const data = await res.json();
+      const data = await apiClient.get('/api/health');
       setHealthData(data);
     } catch (e) {
       console.error(e);

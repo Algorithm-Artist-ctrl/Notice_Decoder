@@ -16,7 +16,10 @@ import {
   Share2
 } from 'lucide-react';
 import { NavTab } from '../components/Navbar';
-import { NoticeTransform3D } from '../components/NoticeTransform3D';
+
+const NoticeTransform3D = React.lazy(() => 
+  import('../components/NoticeTransform3D').then(m => ({ default: m.NoticeTransform3D }))
+);
 
 interface LandingViewProps {
   onNavigate: (tab: NavTab) => void;
@@ -102,8 +105,15 @@ export const LandingView: React.FC<LandingViewProps> = ({
             transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
             className="lg:col-span-5 relative"
           >
-            <div className="bg-gradient-to-br from-slate-50 via-white to-brand-50/40 rounded-2xl border border-slate-200/80 p-2 shadow-2xs">
-              <NoticeTransform3D />
+            <div className="bg-gradient-to-br from-slate-50 via-white to-brand-50/40 rounded-2xl border border-slate-200/80 p-2 shadow-2xs min-h-[380px] flex items-center justify-center">
+              <React.Suspense fallback={
+                <div className="h-[380px] w-full flex flex-col items-center justify-center text-xs text-slate-400 space-y-2">
+                  <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                  <span>Loading transformation scene...</span>
+                </div>
+              }>
+                <NoticeTransform3D />
+              </React.Suspense>
             </div>
           </motion.div>
 

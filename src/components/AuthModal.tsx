@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Lock, Mail, User, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, KeyRound } from 'lucide-react';
 import { AuthUser } from '../lib/auth-server';
+import { apiClient } from '../lib/api-client';
 
 export type AuthMode = 'sign-in' | 'sign-up' | 'forgot-password' | 'reset-password';
 
@@ -62,13 +63,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       if (mode === 'sign-up') {
-        const res = await fetch('/api/auth/sign-up', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
+        const data = await apiClient.post('/api/auth/sign-up', { email, password, name });
+        if (!data.success) {
           throw new Error(data.error || 'Failed to create account.');
         }
 
@@ -77,13 +73,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onSuccess(data.user, data.token);
         onClose();
       } else if (mode === 'sign-in') {
-        const res = await fetch('/api/auth/sign-in', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
+        const data = await apiClient.post('/api/auth/sign-in', { email, password });
+        if (!data.success) {
           throw new Error(data.error || 'Invalid email or password.');
         }
 
