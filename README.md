@@ -106,29 +106,27 @@ npm run db:seed
 ```
 
 ### 5. Start Application
-In terminal 1, start the API backend:
-```bash
-npm run server
-```
-In terminal 2, start the Vite development server:
 ```bash
 npm run dev
 ```
+*(The smart development runner automatically launches the Hono API server on `http://localhost:3000` and the Vite dev server on `http://localhost:5173` concurrently with zero configuration).*
+
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
 ## Automated Test Suite
 
-Run all 26 automated unit and integration tests:
+Run all 37 automated unit and integration tests:
 ```bash
 npm test
 ```
 
 ### Test Coverage Highlights:
-- **Conflict Engine**: Identical intervals, partial overlaps, complete containment, adjacent boundaries (zero false-positives), distinct dates, missing end times, overnight midnight crossings, timezone normalization, and deadline-point intersections.
-- **iCalendar**: RFC 5545 structure, special character escaping, timezone formatting, and point alarms.
-- **Extractor**: Extraction accuracy on standard academic circulars.
+- **Conflict Engine (12 tests)**: Identical intervals, partial overlaps, complete containment, adjacent boundaries (zero false-positives), distinct dates, missing end times, overnight midnight crossings, timezone normalization, and deadline-point intersections.
+- **iCalendar (6 tests)**: RFC 5545 structure, special character escaping, timezone formatting, and point alarms.
+- **Extractor (3 tests)**: Extraction accuracy and date/time normalization on standard academic circulars.
+- **HTTP REST API & Persistence (16 tests)**: `/api/health`, `/api/notices`, `/api/schedule`, `/api/conflicts`, `/api/notices/upload`, `/api/events/:id`, `/api/calendar/export`, `/api/demo/seed`, and Neon cloud services diagnostics.
 
 ---
 
@@ -142,5 +140,7 @@ This runs strict TypeScript type checking (`tsc`) followed by Vite optimization,
 ---
 
 ## Credits & Attribution
-- **Authors**: Byte_Brains Team
-- **Software**: Notice Decoder v1.0
+- **Product**: Notice Decoder
+- **Maintainer**: Notice Decoder Project
+- **License**: MIT
+

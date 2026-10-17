@@ -4,7 +4,39 @@
 
 ---
 
-## 1. Cloudflare Pages / Workers Deployment
+## 1. Render Deployment (Recommended)
+Notice Decoder deploys to Render as a Unified Web Service running Hono and serving the optimized React frontend.
+
+### Step 1: Create Web Service on Render
+1. Connect your repository (`Algorithm-Artist-ctrl/Notice_Decoder`) to [Render](https://dashboard.render.com).
+2. Configure settings:
+   - **Environment**: `Node`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start` (or `npm run dev` — our smart runner auto-detects Render)
+   - **Branch**: `main`
+
+### Step 2: Configure Environment Variables
+Set the following keys in the Render Dashboard under **Environment**:
+```bash
+NODE_ENV=production
+DATABASE_URL=postgresql://neondb_owner:***@ep-dry-pond-a1s9q608-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://neondb_owner:***@ep-dry-pond-a1s9q608.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+AWS_ACCESS_KEY_ID=***
+AWS_SECRET_ACCESS_KEY=***
+AWS_ENDPOINT_URL_S3=https://storage.ap-southeast-1.neon.tech
+AWS_REGION=ap-southeast-1
+NEON_FUNCTION_HELLO_BASE_URL=https://br-small-mouse-b32qy2kp-hello.compute.c-4.ap-southeast-1.aws.neon.tech
+DEFAULT_TIMEZONE=Asia/Kolkata
+# Optional for Google AI Studio Gemini API:
+GEMINI_API_KEY=***
+```
+
+### Step 3: Zero-Config Port Binding
+Notice Decoder reads Render's dynamic `$PORT` environment variable and binds to `0.0.0.0:$PORT` automatically.
+
+---
+
+## 2. Cloudflare Pages / Workers Deployment
 
 Notice Decoder is designed to run seamlessly on the Cloudflare edge runtime.
 
@@ -29,15 +61,20 @@ wrangler pages deploy dist --project-name notice-decoder
 
 ---
 
-## 2. Neon Serverless PostgreSQL Configuration
+## 3. Neon Serverless PostgreSQL & Cloud Services Configuration
 
-### Step 1: Create a Database on Neon
-1. Log in to [Neon Console](https://console.neon.tech).
-2. Create a new project named `notice-decoder`.
-3. Copy your Pooled Connection String (`postgresql://user:password@ep-...neon.tech/notice_decoder?sslmode=require`).
+### Step 1: Neon Services Provisioning
+1. Initialize and provision Neon services:
+   ```bash
+   neon init -y --org-id <org-id> --project-id <project-id> --branch production --services postgres,auth,object-storage,functions
+   neon deploy
+   ```
+2. Neon automatically deploys:
+   - Serverless PostgreSQL with connection pooling
+   - S3-compatible private Object Storage bucket (`assets`)
+   - Serverless Functions (`hello`)
 
-### Step 2: Run Migrations
-Set `DATABASE_URL` in your `.env` and execute:
+### Step 2: Run Database Migrations
 ```bash
 npm run db:migrate
 ```
@@ -49,15 +86,22 @@ npm run db:seed
 
 ---
 
-## 3. Environment Variables Reference
+## 4. Environment Variables Reference
 
 | Variable | Description | Required? | Default / Fallback |
 | :--- | :--- | :--- | :--- |
-| `PORT` | Local API server port | No | `3000` |
+| `PORT` | Local or Cloud server port | Injected by Render | `3000` |
+| `NODE_ENV` | Runtime environment mode | Recommended | `development` / `production` |
 | `DATABASE_URL` | Neon Serverless PostgreSQL pooled connection string | Recommended | Activates high-reliability local file store if omitted |
+| `DATABASE_URL_UNPOOLED` | Neon PostgreSQL direct connection string | Optional | Used for migrations |
+| `AWS_ACCESS_KEY_ID` | Neon S3 Object Storage access key | Optional | Cloud file archiving disabled if omitted |
+| `AWS_SECRET_ACCESS_KEY` | Neon S3 Object Storage secret key | Optional | Cloud file archiving disabled if omitted |
+| `AWS_ENDPOINT_URL_S3` | Neon S3 Object Storage endpoint | Optional | `https://storage.ap-southeast-1.neon.tech` |
+| `AWS_REGION` | Neon S3 region | Optional | `ap-southeast-1` |
+| `NEON_FUNCTION_HELLO_BASE_URL` | Neon Serverless Function base URL | Optional | Deployed function endpoint |
 | `GEMINI_API_KEY` | Google AI Studio API key for Gemini 2.5 Flash entity parsing | Optional | Uses deterministic NLP/heuristic parser if omitted |
 | `DEFAULT_TIMEZONE` | Default timezone for interval normalization | No | `Asia/Kolkata` |
-| `NODE_ENV` | Runtime environment mode | No | `development` |
+
 
 ---
 
