@@ -221,3 +221,151 @@ describe('HTTP REST API Endpoints via Hono', () => {
   });
 });
 
+describe('Authentication & User Isolation Suite', () => {
+  const testEmailA = `student_a_${Date.now()}@example.com`;
+  const testEmailB = `student_b_${Date.now()}@example.com`;
+  const password = 'StrongPassword123!';
+  let tokenA = '';
+  let tokenB = '';
+  let noticeAId = '';
+
+  it('rejects registration with invalid email or weak password', async () => {
+    const badEmailRes = await app.request('/api/auth/sign-up', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'notanemail', password: '123' }),
+    });
+    expect(badEmailRes.status).toBe(400);
+
+    const weakPassRes = await app.request('/api/auth/sign-up', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'valid@example.com', password: 'short' }),
+    });
+    expect(weakPassRes.status).toBe(400);
+  });
+
+  it('registers User A and returns session token and user info', async () => {
+    const res = await app.request('/api/auth/sign-up', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: testEmailA, password, name: 'Student A' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.token).toBeDefined();
+    expect(body.user.email).toBe(testEmailA);
+    tokenA = body.token;
+  });
+
+  it('rejects sign-in with incorrect password', async () => {
+    const res = await app.request('/api/auth/sign-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: testEmailA, password: 'WrongPassword999!' }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('signs in User A with valid credentials and recovers session', async () => {
+    const res = await app.request('/api/auth/sign-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: testEmailA, password }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.token).toBeDefined();
+    tokenA = body.token;
+
+    // Verify session
+    const sessionRes = await app.request('/api/auth/session', {
+      headers: { 'Authorization': `Bearer ${tokenA}` },
+    });
+    expect(sessionRes.status).toBe(200);
+    const sessionBody = await sessionRes.json();
+    expect(sessionBody.user).not.toBeNull();
+    expect(sessionBody.user.email).toBe(testEmailA);
+  });
+
+  it('registers User B successfully', async () => {
+    const res = await app.request('/api/auth/sign-up', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: testEmailB, password, name: 'Student B' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    tokenB = body.token;
+  });
+
+  it('enforces strict cross-user privacy: User B cannot view or delete User A notices', async () => {
+    // 1. User A uploads a private notice
+    const uploadRes = await app.request('/api/notices/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenA}`,
+      },
+      body: JSON.stringify({
+        title: 'User A Private Academic Notice',
+        text: 'Private test for Student A on 10 Dec 2026 from 10:00 to 11:30 in Room 501.',
+      }),
+    });
+    expect(uploadRes.status).toBe(200);
+    const uploadBody = await uploadRes.json();
+    noticeAId = uploadBody.data.notice.id;
+
+    // 2. User A can see their notice in /api/notices
+    const userANoticesRes = await app.request('/api/notices', {
+      headers: { 'Authorization': `Bearer ${tokenA}` },
+    });
+    const userANotices = await userANoticesRes.json();
+    expect(userANotices.data.some((n: any) => n.id === noticeAId)).toBe(true);
+
+    // 3. User B calling /api/notices CANNOT see User A private notice!
+    const userBNoticesRes = await app.request('/api/notices', {
+      headers: { 'Authorization': `Bearer ${tokenB}` },
+    });
+    const userBNotices = await userBNoticesRes.json();
+    expect(userBNotices.data.some((n: any) => n.id === noticeAId)).toBe(false);
+
+    // 4. User B requesting User A notice directly receives 404/unauthorized
+    const crossGetRes = await app.request(`/api/notices/${noticeAId}`, {
+      headers: { 'Authorization': `Bearer ${tokenB}` },
+    });
+    expect(crossGetRes.status).toBe(404);
+
+    // 5. User B trying to delete User A notice receives 403 Forbidden
+    const crossDeleteRes = await app.request(`/api/notices/${noticeAId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${tokenB}` },
+    });
+    expect(crossDeleteRes.status).toBe(403);
+
+    // 6. User A can successfully delete their own notice
+    const ownDeleteRes = await app.request(`/api/notices/${noticeAId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${tokenA}` },
+    });
+    expect(ownDeleteRes.status).toBe(200);
+  });
+
+  it('signs out and invalidates session token', async () => {
+    const signOutRes = await app.request('/api/auth/sign-out', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${tokenA}` },
+    });
+    expect(signOutRes.status).toBe(200);
+
+    const sessionRes = await app.request('/api/auth/session', {
+      headers: { 'Authorization': `Bearer ${tokenA}` },
+    });
+    const sessionBody = await sessionRes.json();
+    expect(sessionBody.user).toBeNull();
+  });
+});
+
+

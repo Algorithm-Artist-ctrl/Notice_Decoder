@@ -5,6 +5,7 @@
 -- 1. Notices Table
 CREATE TABLE IF NOT EXISTS notices (
     id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64),
     title VARCHAR(255) NOT NULL,
     raw_text TEXT NOT NULL,
     file_name VARCHAR(255),
@@ -19,11 +20,13 @@ CREATE TABLE IF NOT EXISTS notices (
 
 CREATE INDEX IF NOT EXISTS idx_notices_status ON notices(status);
 CREATE INDEX IF NOT EXISTS idx_notices_created_at ON notices(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notices_user_id ON notices(user_id);
 
 -- 2. Events Table (Extracted and Confirmed events)
 CREATE TABLE IF NOT EXISTS events (
     id VARCHAR(64) PRIMARY KEY,
     notice_id VARCHAR(64) REFERENCES notices(id) ON DELETE CASCADE,
+    user_id VARCHAR(64),
     title VARCHAR(255) NOT NULL,
     category VARCHAR(32) NOT NULL,
     kind VARCHAR(32) NOT NULL DEFAULT 'timed_event',
@@ -44,6 +47,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_events_notice_id ON events(notice_id);
+CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
 CREATE INDEX IF NOT EXISTS idx_events_is_confirmed ON events(is_confirmed);
 CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);

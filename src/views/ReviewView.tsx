@@ -94,11 +94,15 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
   const handleSaveAndConfirm = async () => {
     setIsSaving(true);
     try {
+      const token = localStorage.getItem('notice_decoder_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       // 1. Send patched events to server
       for (const ev of events) {
         await fetch(`/api/events/${ev.id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(ev),
         });
       }
@@ -106,6 +110,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
       // 2. Mark notice as confirmed
       const res = await fetch(`/api/notices/${notice.id}/confirm`, {
         method: 'POST',
+        headers,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to confirm events');

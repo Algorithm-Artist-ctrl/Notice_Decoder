@@ -87,14 +87,15 @@ export async function testNeonConnection(): Promise<DatabaseStatus> {
   }
 }
 
-/**
- * Gets SQL query client if Neon is available
- */
 export function getNeonClient(): NeonQueryFunction<false, false> | null {
-  if (!sqlClient && process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('ep-sample-pooler')) {
-    sqlClient = neon(process.env.DATABASE_URL);
+  const url = process.env.DATABASE_URL;
+  if (!url || url.includes('user:password@ep-sample-pooler') || url.includes('ep-sample-pooler')) {
+    return null;
   }
-  return isConnected ? sqlClient : null;
+  if (!sqlClient) {
+    sqlClient = neon(url);
+  }
+  return sqlClient;
 }
 
 export function getDatabaseStatus(): DatabaseStatus {

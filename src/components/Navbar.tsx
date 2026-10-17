@@ -23,6 +23,9 @@ interface NavbarProps {
   onLoadDemoNotice: () => void;
   isDemoLoading: boolean;
   timezone: string;
+  user?: { id: string; name: string; email: string } | null;
+  onOpenAuth: () => void;
+  onSignOut: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,6 +35,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLoadDemoNotice,
   isDemoLoading,
   timezone,
+  user,
+  onOpenAuth,
+  onSignOut,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -112,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Quick Action & Timezone */}
+          {/* Quick Action, Timezone & Auth */}
           <div className="hidden lg:flex items-center space-x-3">
             {/* Timezone pill */}
             <div className="flex items-center space-x-1.5 text-[11px] text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
@@ -130,6 +136,36 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-brand-600" />
               <span>{isDemoLoading ? 'Loading sample...' : 'Try sample notice'}</span>
             </button>
+
+            {/* Auth Button or User Profile */}
+            {user ? (
+              <div className="flex items-center space-x-2 bg-slate-100 border border-slate-200 pl-2 pr-3 py-1 rounded-xl">
+                <div className="w-6 h-6 rounded-lg bg-navy-900 text-white flex items-center justify-center text-[11px] font-bold shadow-xs">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-slate-900 leading-none max-w-[110px] truncate">
+                    {user.name}
+                  </div>
+                  <div className="text-[10px] text-slate-400 leading-none mt-0.5">
+                    Verified
+                  </div>
+                </div>
+                <button
+                  onClick={onSignOut}
+                  className="ml-1 text-[11px] text-slate-400 hover:text-red-600 font-medium pl-1 border-l border-slate-200"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-navy-900 hover:bg-navy-800 text-white transition shadow-sm"
+              >
+                <span>Sign In</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}

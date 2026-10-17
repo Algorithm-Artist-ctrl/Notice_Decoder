@@ -22,6 +22,7 @@ import { extractNoticeEvents } from '../src/lib/extractor';
 import { generateICalendar } from '../src/lib/ics-exporter';
 import { NoticeRecord, ExtractedEvent } from '../src/types';
 import { uploadToNeonStorage, invokeNeonHelloFunction, getNeonServicesDiagnostics } from '../src/lib/neon-services';
+import { verifySession, handleSignUp, handleSignIn, handleSignOut, extractToken } from '../src/lib/auth-server';
 import pdfParse from 'pdf-parse';
 import { createWorker } from 'tesseract.js';
 
@@ -31,7 +32,8 @@ const app = new Hono();
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  credentials: true,
 }));
 
 // Test database connection at startup
@@ -41,65 +43,156 @@ testNeonConnection().then(status => {
   } else {
     console.log('ℹ️ Running in local resilient store mode:', status.error || 'No remote DB configured');
   }
+}).catch(err => {
+  console.warn('Startup database test warning:', err.message);
 });
 
 /**
  * Health check & diagnostics endpoint
  */
 app.get('/api/health', async (c) => {
-  const dbStatus = await testNeonConnection();
-  const neonDiagnostics = await getNeonServicesDiagnostics();
-  const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 5);
+  try {
+    const dbStatus = await testNeonConnection();
+    const neonDiagnostics = await getNeonServicesDiagnostics();
+    const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 5);
 
-  return c.json({
-    status: 'ok',
-    version: '1.0.0',
-    app: 'Notice Decoder',
-    tagline: 'Your academic schedule, made clear.',
-    timestamp: new Date().toISOString(),
-    system: {
-      database: dbStatus,
-      neon: neonDiagnostics,
-      aiExtraction: {
-        provider: hasGeminiKey ? 'google_gemini_2.5_flash' : 'deterministic_heuristic_nlp',
-        apiKeyConfigured: hasGeminiKey,
-        accuracyBaseline: 'Validated on sample circular test suite',
+    return c.json({
+      status: 'ok',
+      version: '1.0.0',
+      app: 'Notice Decoder',
+      tagline: 'Your academic schedule, made clear.',
+      timestamp: new Date().toISOString(),
+      system: {
+        database: dbStatus,
+        neon: neonDiagnostics,
+        aiExtraction: {
+          provider: hasGeminiKey ? 'google_gemini_2.5_flash' : 'deterministic_heuristic_nlp',
+          apiKeyConfigured: hasGeminiKey,
+          accuracyBaseline: 'Validated on sample circular test suite',
+        },
+        ocr: {
+          engine: 'tesseract_js',
+          status: 'ready',
+        },
+        calendar: {
+          format: 'RFC 5545 iCalendar (.ics)',
+          status: 'ready',
+        },
+        fileLimit: '10 MB per file (enforced)',
       },
-      ocr: {
-        engine: 'tesseract_js',
-        status: 'ready',
-      },
-      calendar: {
-        format: 'RFC 5545 iCalendar (.ics)',
-        status: 'ready',
-      },
-      fileLimit: '10 MB per file (enforced)',
-    },
-  });
+    });
+  } catch (err: any) {
+    return c.json({ status: 'error', error: err.message }, 500);
+  }
 });
 
 /**
  * Neon backend services diagnostics & inspection
  */
 app.get('/api/neon/services', async (c) => {
-  const diagnostics = await getNeonServicesDiagnostics();
-  return c.json({ success: true, data: diagnostics });
+  try {
+    const diagnostics = await getNeonServicesDiagnostics();
+    return c.json({ success: true, data: diagnostics });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
 });
 
 /**
  * Test Neon Function hello
  */
 app.get('/api/neon/function-test', async (c) => {
-  const result = await invokeNeonHelloFunction();
-  return c.json(result);
+  try {
+    const result = await invokeNeonHelloFunction();
+    return c.json(result);
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+/* =========================================================================
+   AUTHENTICATION ENDPOINTS (Managed Neon Auth + Session Verification)
+   ========================================================================= */
+
+/**
+ * Sign up with email & password
+ */
+app.post('/api/auth/sign-up', async (c) => {
+  try {
+    const body = await c.req.json();
+    const result = await handleSignUp(body);
+    if (!result.success) {
+      return c.json({ success: false, error: result.error }, 400);
+    }
+    return c.json({
+      success: true,
+      token: result.token,
+      user: result.user,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
 });
 
 /**
- * List all saved notices
+ * Sign in with email & password
+ */
+app.post('/api/auth/sign-in', async (c) => {
+  try {
+    const body = await c.req.json();
+    const result = await handleSignIn(body);
+    if (!result.success) {
+      return c.json({ success: false, error: result.error }, 401);
+    }
+    return c.json({
+      success: true,
+      token: result.token,
+      user: result.user,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+/**
+ * Get current session
+ */
+app.get('/api/auth/session', async (c) => {
+  try {
+    const user = await verifySession(c);
+    if (!user) {
+      return c.json({ success: true, user: null });
+    }
+    return c.json({ success: true, user });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+/**
+ * Sign out
+ */
+app.post('/api/auth/sign-out', async (c) => {
+  try {
+    const token = extractToken(c);
+    await handleSignOut(token);
+    return c.json({ success: true, message: 'Signed out successfully' });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+/* =========================================================================
+   CORE APPLICATION ENDPOINTS
+   ========================================================================= */
+
+/**
+ * List all saved notices with user isolation
  */
 app.get('/api/notices', async (c) => {
   try {
-    const notices = await NoticeStore.listNotices();
+    const user = await verifySession(c);
+    const notices = await NoticeStore.listNotices(user?.id);
     return c.json({ success: true, data: notices });
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -107,71 +200,99 @@ app.get('/api/notices', async (c) => {
 });
 
 /**
- * Get notice by ID
+ * Get notice by ID with ownership check
  */
 app.get('/api/notices/:id', async (c) => {
-  const id = c.req.param('id');
-  const notice = await NoticeStore.getNoticeById(id);
-  if (!notice) {
-    return c.json({ success: false, error: 'Notice not found' }, 404);
+  try {
+    const id = c.req.param('id');
+    const user = await verifySession(c);
+    const notice = await NoticeStore.getNoticeById(id, user?.id);
+    if (!notice) {
+      return c.json({ success: false, error: 'Notice not found or unauthorized' }, 404);
+    }
+    const events = await NoticeStore.getEventsByNoticeId(id, user?.id);
+    return c.json({ success: true, data: { notice, events } });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
   }
-  const events = await NoticeStore.getEventsByNoticeId(id);
-  return c.json({ success: true, data: { notice, events } });
 });
 
 /**
  * Delete notice
  */
 app.delete('/api/notices/:id', async (c) => {
-  const id = c.req.param('id');
-  const success = await NoticeStore.deleteNotice(id);
-  return c.json({ success });
+  try {
+    const id = c.req.param('id');
+    const user = await verifySession(c);
+    const success = await NoticeStore.deleteNotice(id, user?.id);
+    if (!success) {
+      return c.json({ success: false, error: 'Notice not found or unauthorized' }, 403);
+    }
+    return c.json({ success: true });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
 });
 
 /**
  * Get events for a notice
  */
 app.get('/api/notices/:id/events', async (c) => {
-  const id = c.req.param('id');
-  const events = await NoticeStore.getEventsByNoticeId(id);
-  return c.json({ success: true, data: events });
+  try {
+    const id = c.req.param('id');
+    const user = await verifySession(c);
+    const events = await NoticeStore.getEventsByNoticeId(id, user?.id);
+    return c.json({ success: true, data: events });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
 });
 
 /**
  * Update single event
  */
 app.patch('/api/events/:id', async (c) => {
-  const id = c.req.param('id');
-  const body = await c.req.json();
-  const updated = await NoticeStore.updateEvent(id, body);
-  if (!updated) {
-    return c.json({ success: false, error: 'Event not found' }, 404);
+  try {
+    const id = c.req.param('id');
+    const user = await verifySession(c);
+    const body = await c.req.json();
+    const updated = await NoticeStore.updateEvent(id, body, user?.id);
+    if (!updated) {
+      return c.json({ success: false, error: 'Event not found or unauthorized' }, 404);
+    }
+    return c.json({ success: true, data: updated });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
   }
-  return c.json({ success: true, data: updated });
 });
 
 /**
  * Confirm all events for a notice
  */
 app.post('/api/notices/:id/confirm', async (c) => {
-  const noticeId = c.req.param('id');
-  const notice = await NoticeStore.getNoticeById(noticeId);
-  if (!notice) {
-    return c.json({ success: false, error: 'Notice not found' }, 404);
+  try {
+    const noticeId = c.req.param('id');
+    const user = await verifySession(c);
+    const notice = await NoticeStore.getNoticeById(noticeId, user?.id);
+    if (!notice) {
+      return c.json({ success: false, error: 'Notice not found or unauthorized' }, 404);
+    }
+
+    const events = await NoticeStore.getEventsByNoticeId(noticeId, user?.id);
+    for (const ev of events) {
+      ev.isConfirmed = true;
+      ev.reviewRequired = false;
+    }
+    await NoticeStore.saveEvents(events, user?.id);
+
+    notice.status = 'confirmed';
+    notice.updatedAt = new Date().toISOString();
+    await NoticeStore.saveNotice(notice);
+
+    return c.json({ success: true, message: 'All notice events confirmed and saved into schedule', data: events });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
   }
-
-  const events = await NoticeStore.getEventsByNoticeId(noticeId);
-  for (const ev of events) {
-    ev.isConfirmed = true;
-    ev.reviewRequired = false;
-  }
-  await NoticeStore.saveEvents(events);
-
-  notice.status = 'confirmed';
-  notice.updatedAt = new Date().toISOString();
-  await NoticeStore.saveNotice(notice);
-
-  return c.json({ success: true, message: 'All notice events confirmed and saved into schedule', data: events });
 });
 
 /**
@@ -179,7 +300,8 @@ app.post('/api/notices/:id/confirm', async (c) => {
  */
 app.get('/api/schedule', async (c) => {
   try {
-    const events = await NoticeStore.getAllConfirmedEvents();
+    const user = await verifySession(c);
+    const events = await NoticeStore.getAllConfirmedEvents(user?.id);
     // Sort chronologically by date then start_time
     events.sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
@@ -197,9 +319,14 @@ app.get('/api/schedule', async (c) => {
  * Get conflict analysis
  */
 app.get('/api/conflicts', async (c) => {
-  const noticeId = c.req.query('noticeId');
-  const analysis = await NoticeStore.getConflictAnalysis(noticeId);
-  return c.json({ success: true, data: analysis });
+  try {
+    const noticeId = c.req.query('noticeId');
+    const user = await verifySession(c);
+    const analysis = await NoticeStore.getConflictAnalysis(noticeId, user?.id);
+    return c.json({ success: true, data: analysis });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
 });
 
 /**
@@ -208,6 +335,7 @@ app.get('/api/conflicts', async (c) => {
  */
 app.post('/api/notices/upload', async (c) => {
   try {
+    const user = await verifySession(c);
     const contentType = c.req.header('content-type') || '';
     let rawText = '';
     let fileName = 'UploadedNotice.txt';
@@ -265,9 +393,7 @@ app.post('/api/notices/upload', async (c) => {
             const parsedPdf = await pdfParse(buffer);
             rawText = parsedPdf.text;
             if (rawText.trim().length < 20) {
-              // PDF with scanned pages or minimal text layer -> OCR fallback
               console.log('PDF has minimal text layer; invoking Tesseract OCR fallback...');
-              // For demo / stability when image PDF
               rawText = parsedPdf.text || 'Scanned PDF notice uploaded.';
             }
           } catch (pdfErr: any) {
@@ -303,10 +429,11 @@ app.post('/api/notices/upload', async (c) => {
       }, 400);
     }
 
-    // 1. Create notice record
+    // 1. Create notice record with user ownership
     const noticeId = isDemo ? 'demo-notice-ps02' : `notice-${Date.now()}`;
     const notice: NoticeRecord = {
       id: noticeId,
+      userId: user?.id,
       title: title.trim() || 'College Notice',
       rawText: rawText.trim(),
       fileName,
@@ -328,13 +455,14 @@ app.post('/api/notices/upload', async (c) => {
 
     for (const ev of events) {
       ev.noticeId = noticeId;
+      ev.userId = user?.id;
     }
 
     notice.extractedEventsCount = events.length;
 
     // 3. Save to Neon PostgreSQL
     await NoticeStore.saveNotice(notice);
-    await NoticeStore.saveEvents(events);
+    await NoticeStore.saveEvents(events, user?.id);
 
     // 4. Archive file to Neon Object Storage if binary asset was uploaded
     if (buffer) {
@@ -364,7 +492,8 @@ app.post('/api/notices/upload', async (c) => {
  */
 app.get('/api/calendar/export', async (c) => {
   try {
-    const events = await NoticeStore.getAllConfirmedEvents();
+    const user = await verifySession(c);
+    const events = await NoticeStore.getAllConfirmedEvents(user?.id);
     if (events.length === 0) {
       return c.json({
         success: false,
@@ -388,14 +517,18 @@ app.get('/api/calendar/export', async (c) => {
  * Re-seed demo dataset
  */
 app.post('/api/demo/seed', async (c) => {
-  await NoticeStore.seedDemoData();
-  const notice = await NoticeStore.getNoticeById('demo-notice-ps02');
-  const events = await NoticeStore.getEventsByNoticeId('demo-notice-ps02');
-  return c.json({
-    success: true,
-    message: 'Demonstration dataset reloaded successfully',
-    data: { notice, events },
-  });
+  try {
+    await NoticeStore.seedDemoData();
+    const notice = await NoticeStore.getNoticeById('demo-notice-ps02');
+    const events = await NoticeStore.getEventsByNoticeId('demo-notice-ps02');
+    return c.json({
+      success: true,
+      message: 'Demonstration dataset reloaded successfully',
+      data: { notice, events },
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
 });
 
 // Serve static client assets from dist/ if built (for production deployment)
@@ -430,5 +563,3 @@ if (process.env.NODE_ENV !== 'test') {
     hostname: HOST,
   });
 }
-
-

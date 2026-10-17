@@ -11,6 +11,8 @@ import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
 import { NoticeRecord, ExtractedEvent, ConflictRecord } from './types';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { AuthModal } from './components/AuthModal';
+import { AuthUser } from './lib/auth-server';
 
 const pathToTab = (pathname: string): NavTab => {
   const p = pathname.toLowerCase();
@@ -52,6 +54,10 @@ export const App: React.FC = () => {
     localStorage.getItem('notice_decoder_tz') || 'Asia/Kolkata'
   );
 
+  // Authentication State
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
   // Notification Toast state
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
@@ -60,6 +66,12 @@ export const App: React.FC = () => {
     setTimeout(() => {
       setToast(null);
     }, 4500);
+  };
+
+  // Helper to get auth headers
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = localStorage.getItem('notice_decoder_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   };
 
   // Synchronize Tab & Browser History
@@ -84,14 +96,34 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Check existing session on startup
+  useEffect(() => {
+    const token = localStorage.getItem('notice_decoder_token');
+    if (token) {
+      fetch('/api/auth/session', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.user) {
+            setAuthUser(data.user);
+          } else {
+            localStorage.removeItem('notice_decoder_token');
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   // Fetch all state from API
   const refreshAppData = async () => {
     setDbError(null);
     try {
+      const headers = getAuthHeaders();
       const [noticesRes, scheduleRes, conflictsRes] = await Promise.all([
-        fetch('/api/notices'),
-        fetch('/api/schedule'),
-        fetch('/api/conflicts'),
+        fetch('/api/notices', { headers }),
+        fetch('/api/schedule', { headers }),
+        fetch('/api/conflicts', { headers }),
       ]);
 
       if (noticesRes.ok) {
@@ -119,7 +151,19 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     refreshAppData();
-  }, []);
+  }, [authUser]);
+
+  const handleSignOut = async () => {
+    try {
+      const headers = getAuthHeaders();
+      await fetch('/api/auth/sign-out', { method: 'POST', headers });
+    } catch {}
+    localStorage.removeItem('notice_decoder_token');
+    document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    setAuthUser(null);
+    showToast('You have been signed out.', 'info');
+    navigateToTab('landing');
+  };
 
   const handleTimezoneChange = (newTz: string) => {
     setTimezone(newTz);
@@ -156,7 +200,9 @@ export const App: React.FC = () => {
 
   const handleOpenNotice = async (noticeId: string) => {
     try {
-      const res = await fetch(`/api/notices/${noticeId}`);
+      const res = await fetch(`/api/notices/${noticeId}`, {
+        headers: getAuthHeaders(),
+      });
       const data = await res.json();
       if (res.ok && data.data) {
         setActiveReviewNotice(data.data.notice);
@@ -172,7 +218,10 @@ export const App: React.FC = () => {
 
   const handleDeleteNotice = async (noticeId: string) => {
     try {
-      const res = await fetch(`/api/notices/${noticeId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/notices/${noticeId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         await refreshAppData();
         showToast('Notice permanently deleted', 'info');
@@ -221,6 +270,9 @@ export const App: React.FC = () => {
         onLoadDemoNotice={handleLoadDemoNotice}
         isDemoLoading={isDemoLoading}
         timezone={timezone}
+        user={authUser}
+        onOpenAuth={() => setAuthModalOpen(true)}
+        onSignOut={handleSignOut}
       />
 
       {/* Main Content View Switcher */}
@@ -294,6 +346,17 @@ export const App: React.FC = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={(user) => {
+          setAuthUser(user);
+          refreshAppData();
+          showToast(`Welcome back, ${user.name}!`, 'success');
+        }}
+      />
 
     </div>
   );

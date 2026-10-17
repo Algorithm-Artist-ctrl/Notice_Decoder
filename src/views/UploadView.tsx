@@ -113,8 +113,13 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         formData.append('file', selectedFile);
         formData.append('title', title || selectedFile.name);
 
+        const token = localStorage.getItem('notice_decoder_token');
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
         response = await fetch('/api/notices/upload', {
           method: 'POST',
+          headers,
           body: formData,
         });
       } else {
@@ -125,9 +130,13 @@ export const UploadView: React.FC<UploadViewProps> = ({ onUploadSuccess }) => {
         setProgressStage('Parsing unstructured text segments...');
         setProgressPercent(40);
 
+        const token = localStorage.getItem('notice_decoder_token');
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
         response = await fetch('/api/notices/upload', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             title: title || 'Pasted Notice',
             text: rawText,

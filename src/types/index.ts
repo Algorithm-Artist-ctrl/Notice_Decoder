@@ -30,6 +30,7 @@ export interface BoundingBox {
 export interface ExtractedEvent {
   id: string;
   noticeId?: string;
+  userId?: string;
   title: string;
   category: EventCategory;
   kind: EventKind;
@@ -67,6 +68,7 @@ export interface ConflictRecord {
 
 export interface NoticeRecord {
   id: string;
+  userId?: string;
   title: string;
   rawText: string;
   fileName?: string;
