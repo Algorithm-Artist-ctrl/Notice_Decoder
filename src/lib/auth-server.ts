@@ -142,7 +142,7 @@ export async function handleSignUp(data: { email: string; password: string; name
 }> {
   const email = data.email?.trim().toLowerCase();
   const password = data.password;
-  const name = data.name?.trim() || email?.split('@')[0] || 'Student';
+  const name = data.name?.trim() || email?.split('@')[0] || 'User';
 
   if (!email || !email.includes('@') || email.length < 5) {
     return { success: false, error: 'A valid email address is required.' };

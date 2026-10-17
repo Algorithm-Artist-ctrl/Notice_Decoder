@@ -47,6 +47,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
     hinglish: notice.summaryHinglish || '',
     hindi: notice.summaryHindi || '',
   });
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleLanguageSwitch = async (targetLang: SummaryLanguage) => {
     setSummaryLang(targetLang);
@@ -125,6 +126,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
   const handleSaveAndConfirm = async () => {
     setIsSaving(true);
+    setSaveError(null);
     try {
       // 1. Send patched events to server
       for (const ev of events) {
@@ -137,7 +139,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
       onConfirm(events);
     } catch (err: any) {
-      alert(`Save error: ${err.message}`);
+      setSaveError(err.message || 'Failed to save and confirm schedule.');
     } finally {
       setIsSaving(false);
     }
@@ -146,6 +148,17 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
   return (
     <div className="space-y-6">
       
+      {/* Save Error Banner if any */}
+      {saveError && (
+        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-xs flex items-start space-x-2.5">
+          <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold">Save Error:</span>
+            <p>{saveError}</p>
+          </div>
+        </div>
+      )}
+
       {/* Top Action Bar */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

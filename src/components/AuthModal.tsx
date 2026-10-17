@@ -36,8 +36,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
     setSuccessMsg(null);
 
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address.');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError('Please enter a valid email address (e.g. name@gmail.com or you@work.com).');
       return;
     }
 
@@ -46,8 +46,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setError('Password must be at least 8 characters long.');
         return;
       }
+      if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+        setError('Password must contain both letters and numbers for security.');
+        return;
+      }
       if (password !== confirmPassword) {
-        setError('Passwords do not match.');
+        setError('Passwords do not match. Please re-enter your password.');
         return;
       }
     }
@@ -179,7 +183,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {mode === 'sign-up' && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Full Name or Department
+                Full Name
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -188,7 +192,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Maya Sharma (CSE)"
+                  placeholder="e.g. Maya Sharma or Alex Johnson"
                   className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 />
               </div>
@@ -206,7 +210,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="student@university.edu"
+                placeholder="you@company.com or name@gmail.com"
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
@@ -267,7 +271,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </button>
               </div>
               {mode === 'sign-up' && (
-                <p className="text-[10px] text-slate-500 mt-1">Must be at least 8 characters long.</p>
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex items-center space-x-1.5">
+                    <div className={`h-1 flex-1 rounded-full ${password.length >= 8 ? 'bg-amber-500' : 'bg-slate-200'}`} />
+                    <div className={`h-1 flex-1 rounded-full ${password.length >= 8 && /[0-9]/.test(password) && /[A-Za-z]/.test(password) ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                    <div className={`h-1 flex-1 rounded-full ${password.length >= 10 && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password) ? 'bg-emerald-600' : 'bg-slate-200'}`} />
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    {password.length < 8 
+                      ? 'Must be at least 8 characters long.' 
+                      : (!/[0-9]/.test(password) || !/[A-Za-z]/.test(password))
+                        ? 'Include both letters and numbers for stronger security.'
+                        : 'Strong password.'}
+                  </p>
+                </div>
               )}
             </div>
           )}

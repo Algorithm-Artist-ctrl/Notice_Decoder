@@ -28,6 +28,8 @@ import { verifySession, handleSignUp, handleSignIn, handleSignOut, extractToken 
 import pdfParse from 'pdf-parse';
 import { createWorker } from 'tesseract.js';
 
+const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+
 const app = new Hono();
 
 // Global middleware
@@ -585,12 +587,17 @@ app.get('/api/conflicts', async (c) => {
 app.post('/api/notices/upload', async (c) => {
   try {
     const user = await verifySession(c);
+    const sessionUserId = resolveSessionUserId(c, user);
+    if (!sessionUserId && isProduction) {
+      return c.json({ success: false, error: 'Authentication required. Please sign in to upload and analyze documents.' }, 401);
+    }
+
     const contentType = c.req.header('content-type') || '';
     let rawText = '';
     let fileName = 'UploadedNotice.txt';
     let fileType: 'pdf' | 'image' | 'text' = 'text';
     let fileSize = 0;
-    let title = 'College Notice';
+    let title = 'Uploaded Document';
     let isDemo = false;
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -600,7 +607,7 @@ app.post('/api/notices/upload', async (c) => {
     if (contentType.includes('application/json')) {
       const body = await c.req.json();
       rawText = body.text || '';
-      title = body.title || 'College Notice';
+      title = body.title || 'Uploaded Document';
       isDemo = Boolean(body.isDemo);
       fileSize = Buffer.byteLength(rawText, 'utf-8');
       fileType = 'text';
@@ -695,11 +702,10 @@ app.post('/api/notices/upload', async (c) => {
       timezone: process.env.DEFAULT_TIMEZONE || 'Asia/Kolkata',
     });
 
-    const determinedTitle = title.trim() && title !== 'College Notice' && title !== 'Uploaded Notice'
+    const determinedTitle = title.trim() && title !== 'College Notice' && title !== 'Uploaded Notice' && title !== 'Uploaded Document'
       ? title.trim()
       : (analysis.documentTitle || 'Processed Document');
 
-    const sessionUserId = resolveSessionUserId(c, user);
     const noticeId = `doc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const notice: NoticeRecord = {
       id: noticeId,
