@@ -42,6 +42,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isTestingServices, setIsTestingServices] = useState(false);
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
   const [leadTime, setLeadTime] = useState<number>(30);
   const [preferredLanguage, setPreferredLanguage] = useState<SummaryLanguage>('english');
   const [notifications, setNotifications] = useState({
@@ -99,6 +100,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     try {
       setIsSavingPrefs(true);
       setSaveSuccessMsg(null);
+      setSaveErrorMsg(null);
       const res = await apiClient.put('/api/preferences', {
         timezone,
         reminderLeadTimeMinutes: leadTime,
@@ -108,9 +110,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       if (res.success) {
         setSaveSuccessMsg('Preferences saved successfully.');
         setTimeout(() => setSaveSuccessMsg(null), 4000);
+      } else {
+        throw new Error(res.error || 'Failed to save preferences.');
       }
     } catch (e: any) {
-      alert(`Failed to save preferences: ${e.message}`);
+      setSaveErrorMsg(e.message || 'Failed to save preferences.');
+      setTimeout(() => setSaveErrorMsg(null), 5000);
     } finally {
       setIsSavingPrefs(false);
     }
@@ -215,6 +220,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1 self-start sm:self-auto">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               <span>{saveSuccessMsg}</span>
+            </span>
+          )}
+          {saveErrorMsg && (
+            <span className="text-xs text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1 self-start sm:self-auto">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+              <span>{saveErrorMsg}</span>
             </span>
           )}
         </div>

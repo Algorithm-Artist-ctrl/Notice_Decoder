@@ -1,7 +1,7 @@
 {
   "name": "notice-decoder",
   "version": "1.0.0",
-  "description": "Turn College Notices into Clear, Conflict-Free Schedules",
+  "description": "Turn Any Document into Clear, Conflict-Free Schedules & Action Plans",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +9,8 @@
     "dev": "tsx scripts/dev.ts",
     "server": "tsx server/index.ts",
     "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "test:watch": "vitest",
